@@ -337,8 +337,8 @@ export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
   part(0.11, 0.11, 0.3, 0xf2c49b, [0.03, -0.22, 0.2], [0.3, 0, 0.12]); // forearm
   part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.25, 0.33], [0.3, 0, 0.12]); // cuff
 
-  g.position.set(0.2, -0.2, -0.5);
-  g.rotation.set(0, 0.12, 0);
-  g.scale.setScalar(0.55);
+  g.position.set(0.19, -0.13, -0.52);
+  g.rotation.set(-0.04, 0.14, 0.03);
+  g.scale.setScalar(0.5);
   return g;
 }

@@ -12,13 +12,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Spray City is a lightweight browser-based first-person action game with bold cel-shaded street-art visuals. Runs in Chrome, no downloads.",
+          "Spray City is a lightweight browser first-person action game with bold cel-shaded street-art visuals. Runs in Chrome, no downloads, saves locally.",
       },
       { property: "og:title", content: "Spray City — Cel-Shaded FPS in Your Browser" },
       {
         property: "og:description",
         content:
-          "Explore a stylised graffiti-soaked 3D test district. WASD, mouse-look, and local saves — straight in the browser.",
+          "Explore a graffiti-soaked neon district. Smooth first-person movement, toon-shaded visuals and local saves — straight in the browser.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -55,56 +55,85 @@ function Index() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-6">
-      <div className="pointer-events-none absolute inset-0 bg-spray opacity-90" />
-      <div className="pointer-events-none absolute inset-0 bg-grit" />
+    <main className="relative min-h-screen overflow-hidden bg-background">
+      {/* Backdrop: spray haze, grit, skyline silhouette */}
+      <div className="pointer-events-none absolute inset-0 bg-spray" />
+      <div className="pointer-events-none absolute inset-0 bg-grit opacity-70" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-skyline" />
+      <div className="pointer-events-none absolute inset-0 bg-vignette" />
 
-      <div className="relative z-10 w-full max-w-lg text-center">
-        <p className="font-display text-sm uppercase tracking-[0.5em] text-secondary">
-          Chapter 0 · Prologue
-        </p>
-        <h1 className="mt-3 font-display text-6xl uppercase leading-[0.85] tracking-tight text-foreground sm:text-7xl">
-          Spray
-          <span className="block text-primary drop-shadow-[6px_6px_0_var(--outline)]">
-            City
+      {/* Drip tags */}
+      <span className="pointer-events-none absolute left-6 top-24 hidden -rotate-90 font-display text-[10px] uppercase tracking-[0.6em] text-secondary/70 sm:block">
+        Build 0.2 · Foundation
+      </span>
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-6 py-16">
+        <div className="max-w-xl">
+          <span className="inline-block -rotate-2 border-2 border-secondary bg-secondary px-3 py-1 font-display text-xs uppercase tracking-[0.35em] text-secondary-foreground">
+            Chapter 0 — Prologue
           </span>
-        </h1>
-        <p className="mx-auto mt-5 max-w-sm text-sm text-muted-foreground">
-          A cel-shaded first-person action game. Foundation build: test district,
-          movement and local saves.
-        </p>
 
-        <div className="mt-10 flex flex-col gap-3">
-          <button
-            className="w-full rounded-md bg-primary px-6 py-4 font-display text-lg uppercase tracking-widest text-primary-foreground shadow-tag transition-transform hover:-translate-y-1"
-            onClick={() => {
-              clearSave();
-              setSession(NEW_GAME_STATE);
-            }}
-          >
-            New Game
-          </button>
-          <button
-            disabled={!save}
-            className="w-full rounded-md border-2 border-foreground/70 bg-card px-6 py-4 font-display text-lg uppercase tracking-widest text-foreground transition-transform enabled:hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
-            onClick={() =>
-              save &&
-              setSession({
-                position: save.position,
-                yaw: save.yaw,
-                chapter: save.chapter,
-              })
-            }
-          >
-            Continue
-          </button>
+          <h1 className="mt-6 font-display text-[clamp(4rem,16vw,9rem)] uppercase leading-[0.78] tracking-tight text-foreground">
+            <span className="block drop-shadow-[6px_6px_0_var(--outline)]">Spray</span>
+            <span className="block -rotate-1 text-primary drop-shadow-[8px_8px_0_var(--outline)]">
+              City
+            </span>
+          </h1>
+
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
+            Neon district, cel-shaded skies, a can of paint and a bad attitude.
+            This build is the technical foundation: movement, camera, lighting
+            and the test district.
+          </p>
+
+          <div className="mt-10 flex flex-col gap-3 sm:max-w-sm">
+            <button
+              className="group relative w-full overflow-hidden rounded-md bg-primary px-8 py-5 text-left font-display text-2xl uppercase tracking-widest text-primary-foreground shadow-tag transition-transform hover:-translate-y-1"
+              onClick={() => {
+                clearSave();
+                setSession(NEW_GAME_STATE);
+              }}
+            >
+              New Game
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-base opacity-60 transition-transform group-hover:translate-x-1">
+                →
+              </span>
+            </button>
+
+            <button
+              disabled={!save}
+              className="group relative w-full overflow-hidden rounded-md border-2 border-foreground/70 bg-card px-8 py-5 text-left font-display text-2xl uppercase tracking-widest text-foreground transition-transform enabled:hover:-translate-y-1 enabled:hover:border-accent enabled:hover:text-accent disabled:cursor-not-allowed disabled:opacity-30"
+              onClick={() =>
+                save &&
+                setSession({
+                  position: save.position,
+                  yaw: save.yaw,
+                  chapter: save.chapter,
+                })
+              }
+            >
+              Continue
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-base opacity-60">
+                {save ? "↺" : "—"}
+              </span>
+            </button>
+          </div>
+
+          <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-2 font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
+            <div>
+              <dt className="text-accent">Save slot</dt>
+              <dd>
+                {save
+                  ? new Date(save.savedAt).toLocaleString()
+                  : "Empty — start a new run"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-accent">Controls</dt>
+              <dd>WASD · Shift · Mouse</dd>
+            </div>
+          </dl>
         </div>
-
-        <p className="mt-6 text-xs uppercase tracking-widest text-muted-foreground">
-          {save
-            ? `Last save · ${new Date(save.savedAt).toLocaleString()}`
-            : "No save data found"}
-        </p>
       </div>
     </main>
   );

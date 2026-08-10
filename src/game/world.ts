@@ -280,7 +280,7 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
       side: THREE.BackSide,
       depthWrite: false,
       uniforms: {
-        top: { value: new THREE.Color(0x1a0f3d) },
+        top: { value: new THREE.Color(0x2c1b6b) },
         mid: { value: new THREE.Color(0x7b2d8e) },
         bot: { value: new THREE.Color(0xff7a4d) },
       },
@@ -343,7 +343,8 @@ export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
   part(0.11, 0.11, 0.3, 0xf2c49b, [0.03, -0.22, 0.2], [0.3, 0, 0.12]); // forearm
   part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.25, 0.33], [0.3, 0, 0.12]); // cuff
 
-  g.position.set(0.26, -0.24, -0.45);
+  g.position.set(0.17, -0.16, -0.42);
   g.rotation.set(0, 0.12, 0);
+  g.scale.setScalar(0.62);
   return g;
 }

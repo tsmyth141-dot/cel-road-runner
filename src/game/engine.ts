@@ -192,7 +192,7 @@ export function createEngine(
     renderer.render(scene, camera);
     renderer.autoClear = false;
     renderer.clearDepth();
-    renderer.render(viewScene, viewCamera);
+    if (!(window as any).__noVM) renderer.render(viewScene, viewCamera);
     renderer.autoClear = true;
 
     autosave += dt;

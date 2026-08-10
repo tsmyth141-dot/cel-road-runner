@@ -293,7 +293,7 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
           // hard-stepped bands keep the cel-shaded poster feel
           float b = floor(t*6.0)/6.0;
           vec3 c = b < 0.34 ? mix(bot, mid, b/0.34) : mix(mid, top, (b-0.34)/0.66);
-          gl_FragColor = vec4(c,1.0);
+          gl_FragColor = vec4(1.0,0.0,0.0,1.0);
         }`,
     }),
   );

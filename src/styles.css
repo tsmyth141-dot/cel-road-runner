@@ -8,6 +8,7 @@
   --font-display: "Bebas Neue", "Impact", sans-serif;
   --font-sans: "Barlow", system-ui, sans-serif;
   --shadow-tag: 5px 5px 0 var(--outline);
+  --shadow-hud: 0 0 6px color-mix(in oklab, var(--primary) 70%, transparent);
 }
 
 /*
@@ -133,6 +134,18 @@
     radial-gradient(60% 50% at 20% 15%, oklch(0.68 0.24 5 / 0.35), transparent 70%),
     radial-gradient(55% 45% at 85% 25%, oklch(0.7 0.19 250 / 0.35), transparent 70%),
     radial-gradient(50% 50% at 50% 100%, oklch(0.72 0.17 165 / 0.28), transparent 70%);
+}
+
+@utility bg-vignette {
+  background: radial-gradient(
+    120% 90% at 50% 50%,
+    transparent 45%,
+    oklch(0.1 0.05 300 / 0.55) 100%
+  );
+}
+
+@utility shadow-hud {
+  box-shadow: var(--shadow-hud);
 }
 
 @utility bg-grit {

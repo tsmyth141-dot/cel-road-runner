@@ -185,7 +185,7 @@ export function createEngine(
     for (let i = 0; i < animated.flicker.length; i++) {
       const l = animated.flicker[i]!;
       l.intensity =
-        (l.userData.base ??= l.intensity) *
+        (l.userData['base'] ??= l.intensity) *
         (0.86 + Math.sin(now * 0.006 + i * 2.1) * 0.1 + Math.random() * 0.04);
     }
 

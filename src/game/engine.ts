@@ -210,6 +210,7 @@ export function createEngine(
     });
   }
 
+  (window as any).__dbg = { scene, camera, THREE };
   raf = requestAnimationFrame(tick);
 
   return {

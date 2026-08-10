@@ -339,6 +339,6 @@ export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
 
   g.position.set(0.19, -0.13, -0.52);
   g.rotation.set(-0.04, 0.14, 0.03);
-  g.scale.setScalar(0.5);
+  g.scale.setScalar(0.2);
   return g;
 }

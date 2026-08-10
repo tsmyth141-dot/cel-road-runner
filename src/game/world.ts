@@ -243,7 +243,7 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
   const canColors = [0xff2e7e, 0x27d17c, 0xffd400, 0x00e5ff];
   canSpots.forEach(([x, y, z], i) => {
     const g = new THREE.Group();
-    const body = new THREE.Mesh(canGeo, toon(canColors[i]));
+    const body = new THREE.Mesh(canGeo, toon(canColors[i]!));
     const cap = new THREE.Mesh(capGeo, glow(0xfff4d6));
     cap.position.y = 0.55;
     const hull = new THREE.Mesh(canGeo, OUTLINE_MAT);

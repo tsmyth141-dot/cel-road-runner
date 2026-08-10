@@ -192,7 +192,7 @@ export function createEngine(
     renderer.render(scene, camera);
     renderer.autoClear = false;
     renderer.clearDepth();
-    if (!(window as any).__noVM) renderer.render(viewScene, viewCamera);
+    renderer.render(viewScene, viewCamera);
     renderer.autoClear = true;
 
     autosave += dt;
@@ -210,7 +210,6 @@ export function createEngine(
     });
   }
 
-  (window as any).__dbg = { scene, camera, THREE };
   raf = requestAnimationFrame(tick);
 
   return {

@@ -273,30 +273,24 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
   rim.position.set(16, 10, -20);
   root.add(hemi, key, rim);
 
-  // Gradient dusk sky (single inverted sphere, unlit)
+  // Gradient dusk sky: stepped canvas texture on an inverted sphere (cheap, unlit)
+  const skyCanvas = document.createElement("canvas");
+  skyCanvas.width = 4;
+  skyCanvas.height = 64;
+  const ctx = skyCanvas.getContext("2d")!;
+  const stops = ["#2c1b6b", "#4a2280", "#7b2d8e", "#c04a7a", "#ff7a4d", "#ffb066"];
+  for (let i = 0; i < stops.length; i++) {
+    ctx.fillStyle = stops[i]!;
+    ctx.fillRect(0, (i * 64) / stops.length, 4, 64 / stops.length + 1);
+  }
+  const skyTex = new THREE.CanvasTexture(skyCanvas);
+  skyTex.minFilter = THREE.NearestFilter;
+  skyTex.magFilter = THREE.NearestFilter;
   const sky = new THREE.Mesh(
-    new THREE.SphereGeometry(160, 16, 12),
-    new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      depthWrite: false,
-      uniforms: {
-        top: { value: new THREE.Color(0x2c1b6b) },
-        mid: { value: new THREE.Color(0x7b2d8e) },
-        bot: { value: new THREE.Color(0xff7a4d) },
-      },
-      vertexShader: `varying float vY;
-        void main(){ vY = normalize(position).y;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-      fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying float vY;
-        void main(){
-          float t = clamp(vY*0.5+0.5, 0.0, 1.0);
-          // hard-stepped bands keep the cel-shaded poster feel
-          float b = floor(t*6.0)/6.0;
-          vec3 c = b < 0.34 ? mix(bot, mid, b/0.34) : mix(mid, top, (b-0.34)/0.66);
-          gl_FragColor = vec4(1.0,0.0,0.0,1.0);
-        }`,
-    }),
+    new THREE.SphereGeometry(150, 16, 12),
+    new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false }),
   );
+  sky.renderOrder = -1;
   root.add(sky);
 
   return { root, colliders, animated: { spin, flicker } };
@@ -333,9 +327,9 @@ export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
   };
 
   // Blocky stylised pistol
-  part(0.09, 0.11, 0.34, 0.0 + 0x2b2440, [0, 0, -0.16]); // slide
+  part(0.09, 0.11, 0.34, 0x5b4bd6, [0, 0, -0.16]); // slide
   part(0.075, 0.09, 0.16, 0xff2e7e, [0, -0.02, -0.34]); // muzzle block
-  part(0.07, 0.16, 0.09, 0x1f1a30, [0, -0.13, -0.02], [0.25, 0, 0]); // grip
+  part(0.07, 0.16, 0.09, 0x3b2f66, [0, -0.13, -0.02], [0.25, 0, 0]); // grip
   part(0.05, 0.03, 0.1, 0xffd400, [0, 0.07, -0.2], [0, 0, 0], 0.008); // sight rail
 
   // Gloved hand + forearm (cartoon proportions)
@@ -343,8 +337,8 @@ export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
   part(0.11, 0.11, 0.3, 0xf2c49b, [0.03, -0.22, 0.2], [0.3, 0, 0.12]); // forearm
   part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.25, 0.33], [0.3, 0, 0.12]); // cuff
 
-  g.position.set(0.17, -0.16, -0.42);
+  g.position.set(0.2, -0.2, -0.5);
   g.rotation.set(0, 0.12, 0);
-  g.scale.setScalar(0.62);
+  g.scale.setScalar(0.55);
   return g;
 }

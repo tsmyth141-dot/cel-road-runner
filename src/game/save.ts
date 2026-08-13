@@ -3,6 +3,10 @@ export type SaveData = {
   chapter: string;
   position: [number, number, number];
   yaw: number;
+  /** Weapon ids the player has earned so far (index 0 is always owned). */
+  unlocked: string[];
+  /** Currently equipped weapon id. */
+  weapon: string;
   savedAt: number;
 };
 
@@ -15,6 +19,10 @@ export function loadGame(): SaveData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
     if (data?.version !== 1 || !Array.isArray(data.position)) return null;
+    if (!Array.isArray(data.unlocked) || data.unlocked.length === 0) {
+      data.unlocked = ["tagger"];
+    }
+    if (typeof data.weapon !== "string") data.weapon = data.unlocked[0]!;
     return data;
   } catch {
     return null;
@@ -40,4 +48,6 @@ export const NEW_GAME_STATE: Omit<SaveData, "version" | "savedAt"> = {
   chapter: "ch1-the-club",
   position: [0, 1.7, 11],
   yaw: 0,
+  unlocked: ["tagger"],
+  weapon: "tagger",
 };

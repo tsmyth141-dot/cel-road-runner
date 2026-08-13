@@ -10,6 +10,8 @@ export type ClubResult = WorldResult & {
   bounds: { x: number; z: number };
   /** Emissive dance-floor tiles, recoloured every beat. */
   floorTiles: THREE.Mesh[];
+  /** Collectable spray cans that unlock weapons. */
+  pickups: THREE.Object3D[];
 };
 
 const ROOM_X = 22; // half-width
@@ -22,6 +24,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   const spin: THREE.Object3D[] = [];
   const flicker: THREE.PointLight[] = [];
   const floorTiles: THREE.Mesh[] = [];
+  const pickups: THREE.Object3D[] = [];
 
   const matCache = new Map<number, THREE.MeshToonMaterial>();
   const toon = (color: number) => {
@@ -235,6 +238,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     g.position.set(x, y, z);
     root.add(g);
     spin.push(g);
+    pickups.push(g);
   });
 
   // Exit door (to the street, for later)
@@ -257,5 +261,6 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     animated: { spin, flicker },
     bounds: { x: ROOM_X - 1, z: ROOM_Z - 1 },
     floorTiles,
+    pickups,
   };
 }

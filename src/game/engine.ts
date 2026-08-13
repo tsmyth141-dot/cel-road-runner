@@ -2,11 +2,19 @@ import * as THREE from "three";
 import { buildViewModel, makeToonGradient, type Box } from "./world";
 import { buildNightclub } from "./nightclub";
 import { saveGame, type SaveData } from "./save";
+import { WEAPONS, type WeaponDef } from "./progression";
 
 export type EngineHandle = {
   dispose: () => void;
   requestPointerLock: () => void;
   save: () => void;
+};
+
+export type LoadoutState = {
+  unlocked: string[];
+  weapon: string;
+  /** Set when a weapon was just earned, for the HUD toast. */
+  justUnlocked?: string;
 };
 
 const PLAYER_RADIUS = 0.5;
@@ -18,8 +26,9 @@ const FRICTION = 12; // deceleration factor when input stops
 
 export function createEngine(
   canvas: HTMLCanvasElement,
-  start: Pick<SaveData, "position" | "yaw" | "chapter">,
+  start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon">,
   onLockChange: (locked: boolean) => void,
+  onLoadout: (state: LoadoutState) => void = () => {},
 ): EngineHandle {
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -34,16 +43,37 @@ export function createEngine(
   const camera = new THREE.PerspectiveCamera(78, 1, 0.05, 240);
 
   const gradient = makeToonGradient();
-  const { root, colliders, animated, bounds, floorTiles } = buildNightclub(gradient);
+  const { root, colliders, animated, bounds, floorTiles, pickups } = buildNightclub(gradient);
   scene.background = new THREE.Color(0x120c22);
   scene.add(root);
 
   // Viewmodel lives on a separate near-plane scene so it never clips walls.
   const viewScene = new THREE.Scene();
   const viewCamera = new THREE.PerspectiveCamera(55, 1, 0.01, 5);
-  const viewModel = buildViewModel(gradient);
+  // --- loadout / progression state
+  const unlocked = new Set(start.unlocked?.length ? start.unlocked : [WEAPONS[0]!.id]);
+  let weapon: WeaponDef =
+    WEAPONS.find((w) => w.id === start.weapon && unlocked.has(w.id)) ?? WEAPONS[0]!;
+
   const viewRig = new THREE.Group();
+  let viewModel = buildViewModel(gradient, weapon);
   viewRig.add(viewModel);
+
+  const emitLoadout = (justUnlocked?: string) =>
+    onLoadout({ unlocked: [...unlocked], weapon: weapon.id, justUnlocked });
+
+  function equip(next: WeaponDef, justUnlocked?: string) {
+    weapon = next;
+    viewRig.remove(viewModel);
+    viewModel.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.material && !Array.isArray(m.material)) m.material.dispose?.();
+    });
+    viewModel = buildViewModel(gradient, weapon);
+    viewRig.add(viewModel);
+    emitLoadout(justUnlocked);
+  }
+  emitLoadout();
   viewScene.add(viewRig);
   viewScene.add(new THREE.HemisphereLight(0xffe6f2, 0x3a2a5a, 1.5));
   const viewKey = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -63,6 +93,12 @@ export function createEngine(
   const onKeyDown = (e: KeyboardEvent) => {
     keys.add(e.code);
     if (e.code === "Space") e.preventDefault();
+    // Quick-select an earned weapon with 1-4
+    const slot = Number(e.code.replace("Digit", ""));
+    if (e.code.startsWith("Digit") && slot >= 1 && slot <= WEAPONS.length) {
+      const w = WEAPONS[slot - 1]!;
+      if (unlocked.has(w.id) && w.id !== weapon.id) equip(w);
+    }
   };
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
 
@@ -184,6 +220,24 @@ export function createEngine(
       o.rotation.y += dt * 1.4;
       o.position.y += Math.sin(now * 0.002 + o.position.x) * dt * 0.35;
     }
+    // --- weapon pickups: walk over a can to earn the next weapon
+    for (let i = pickups.length - 1; i >= 0; i--) {
+      const p = pickups[i]!;
+      const dx = p.position.x - player.x;
+      const dz = p.position.z - player.z;
+      if (dx * dx + dz * dz < 1.6 * 1.6) {
+        const next = WEAPONS.find((w) => !unlocked.has(w.id));
+        pickups.splice(i, 1);
+        const spinIdx = animated.spin.indexOf(p);
+        if (spinIdx >= 0) animated.spin.splice(spinIdx, 1);
+        p.removeFromParent();
+        if (next) {
+          unlocked.add(next.id);
+          equip(next, next.name);
+        }
+      }
+    }
+
     // --- dance floor pulses on a steady 128 BPM beat
     const beat = (now * 0.002133) % 1;
     for (let i = 0; i < floorTiles.length; i++) {
@@ -218,6 +272,8 @@ export function createEngine(
       chapter: start.chapter,
       position: [player.x, player.y, player.z],
       yaw,
+      unlocked: [...unlocked],
+      weapon: weapon.id,
     });
   }
 

@@ -297,7 +297,10 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
 }
 
 /* ---------------- First-person viewmodel ---------------- */
-export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
+export function buildViewModel(
+  gradient: THREE.DataTexture,
+  palette: { body: number; accent: number } = { body: 0x5b4bd6, accent: 0xff2e7e },
+): THREE.Group {
   const g = new THREE.Group();
   const toon = (c: number) => new THREE.MeshToonMaterial({ color: c, gradientMap: gradient });
   const box = new THREE.BoxGeometry(1, 1, 1);
@@ -327,8 +330,8 @@ export function buildViewModel(gradient: THREE.DataTexture): THREE.Group {
   };
 
   // Blocky stylised pistol
-  part(0.09, 0.11, 0.34, 0x5b4bd6, [0, 0, -0.16]); // slide
-  part(0.075, 0.09, 0.16, 0xff2e7e, [0, -0.02, -0.34]); // muzzle block
+  part(0.09, 0.11, 0.34, palette.body, [0, 0, -0.16]); // slide
+  part(0.075, 0.09, 0.16, palette.accent, [0, -0.02, -0.34]); // muzzle block
   part(0.07, 0.16, 0.09, 0x3b2f66, [0, -0.13, -0.02], [0.25, 0, 0]); // grip
   part(0.05, 0.03, 0.1, 0xffd400, [0, 0.07, -0.2], [0, 0, 0], 0.008); // sight rail
 

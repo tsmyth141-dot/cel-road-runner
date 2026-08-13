@@ -31,7 +31,7 @@ function Index() {
   const [save, setSave] = useState<SaveData | null>(null);
   const [session, setSession] = useState<Pick<
     SaveData,
-    "position" | "yaw" | "chapter"
+    "position" | "yaw" | "chapter" | "unlocked" | "weapon"
   > | null>(null);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ function Index() {
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-6 py-16">
         <div className="max-w-xl">
           <span className="inline-block -rotate-2 border-2 border-secondary bg-secondary px-3 py-1 font-display text-xs uppercase tracking-[0.35em] text-secondary-foreground">
-            Chapter 0 — Prologue
+            Chapter 1 — The Velvet Can
           </span>
 
           <h1 className="mt-6 font-display text-[clamp(4rem,16vw,9rem)] uppercase leading-[0.78] tracking-tight text-foreground">
@@ -81,9 +81,9 @@ function Index() {
           </h1>
 
           <p className="mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Neon district, cel-shaded skies, a can of paint and a bad attitude.
-            This build is the technical foundation: movement, camera, lighting
-            and the test district.
+            The story opens on the floor of the Velvet Can — strobes, a stacked
+            speaker wall and a crew that owes you. Earn your arsenal one job at a
+            time as the city opens up, chapter by chapter.
           </p>
 
           <div className="mt-10 flex flex-col gap-3 sm:max-w-sm">
@@ -109,6 +109,8 @@ function Index() {
                   position: save.position,
                   yaw: save.yaw,
                   chapter: save.chapter,
+                  unlocked: save.unlocked,
+                  weapon: save.weapon,
                 })
               }
             >

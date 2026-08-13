@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { createEngine, type EngineHandle } from "@/game/engine";
+import { createEngine, type EngineHandle, type LoadoutState } from "@/game/engine";
 import type { SaveData } from "@/game/save";
+import { WEAPONS } from "@/game/progression";
 
 type Props = {
-  start: Pick<SaveData, "position" | "yaw" | "chapter">;
+  start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon">;
   onExit: () => void;
 };
 
@@ -11,10 +12,24 @@ export default function GameCanvas({ start, onExit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
   const [locked, setLocked] = useState(false);
+  const [loadout, setLoadout] = useState<LoadoutState>({
+    unlocked: start.unlocked,
+    weapon: start.weapon,
+  });
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2600);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    const engine = createEngine(canvasRef.current, start, setLocked);
+    const engine = createEngine(canvasRef.current, start, setLocked, (state) => {
+      setLoadout(state);
+      if (state.justUnlocked) setToast(state.justUnlocked);
+    });
     engineRef.current = engine;
     return () => {
       engine.dispose();
@@ -46,20 +61,51 @@ export default function GameCanvas({ start, onExit }: Props) {
         {/* corner HUD tags */}
         <div className="absolute bottom-6 left-6 -rotate-2">
           <p className="font-display text-xs uppercase tracking-[0.4em] text-secondary">
-            District 0
+            Chapter 1 — The Velvet Can
           </p>
           <p className="font-display text-4xl uppercase leading-none text-foreground drop-shadow-[3px_3px_0_var(--outline)]">
-            Spray City
+            Neon Nightclub
           </p>
         </div>
-        <div className="absolute bottom-6 right-6 rotate-2 text-right">
+
+        {/* Weapon rack — greyed slots are still locked */}
+        <div className="absolute bottom-6 right-6 flex flex-col items-end gap-1">
           <p className="font-display text-xs uppercase tracking-[0.3em] text-muted-foreground">
             Loadout
           </p>
-          <p className="font-display text-2xl uppercase leading-none text-primary">
-            Tagger .45
-          </p>
+          <div className="flex gap-2">
+            {WEAPONS.map((w, i) => {
+              const owned = loadout.unlocked.includes(w.id);
+              const active = loadout.weapon === w.id;
+              return (
+                <div
+                  key={w.id}
+                  className={`rounded-sm border-2 px-2 py-1 text-center font-display text-[10px] uppercase tracking-[0.2em] ${
+                    active
+                      ? "border-primary bg-primary/20 text-primary"
+                      : owned
+                        ? "border-foreground/40 text-foreground/80"
+                        : "border-foreground/15 text-muted-foreground/40"
+                  }`}
+                >
+                  <span className="block text-[9px] opacity-70">{i + 1}</span>
+                  {owned ? w.name : "Locked"}
+                </div>
+              );
+            })}
+          </div>
         </div>
+
+        {toast && (
+          <div className="absolute left-1/2 top-24 -translate-x-1/2 -rotate-1 rounded-md bg-secondary px-6 py-3 text-center shadow-tag">
+            <p className="font-display text-[10px] uppercase tracking-[0.4em] text-secondary-foreground/80">
+              Weapon Unlocked
+            </p>
+            <p className="font-display text-3xl uppercase leading-none text-secondary-foreground">
+              {toast}
+            </p>
+          </div>
+        )}
       </div>
 
       {!locked && (
@@ -76,6 +122,8 @@ export default function GameCanvas({ start, onExit }: Props) {
             <li>WASD — Move</li>
             <li>Shift — Sprint</li>
             <li>Mouse — Look</li>
+            <li>1-4 — Swap earned weapons</li>
+            <li>Walk over spray cans to unlock gear</li>
             <li>Esc — Pause · Autosaves every 10s</li>
           </ul>
           <div className="flex flex-wrap justify-center gap-3">

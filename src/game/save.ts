@@ -37,7 +37,7 @@ export function clearSave() {
 }
 
 export const NEW_GAME_STATE: Omit<SaveData, "version" | "savedAt"> = {
-  chapter: "prologue",
-  position: [0, 1.7, 8],
+  chapter: "ch1-the-club",
+  position: [0, 1.7, 11],
   yaw: 0,
 };

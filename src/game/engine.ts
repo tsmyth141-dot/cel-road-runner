@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { buildTestLevel, buildViewModel, makeToonGradient, type Box } from "./world";
+import { buildViewModel, makeToonGradient, type Box } from "./world";
+import { buildNightclub } from "./nightclub";
 import { saveGame, type SaveData } from "./save";
 
 export type EngineHandle = {
@@ -28,12 +29,13 @@ export function createEngine(
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x3a1f52, 45, 110);
+  scene.fog = new THREE.Fog(0x1a0f2e, 18, 62);
 
   const camera = new THREE.PerspectiveCamera(78, 1, 0.05, 240);
 
   const gradient = makeToonGradient();
-  const { root, colliders, animated } = buildTestLevel(gradient);
+  const { root, colliders, animated, bounds, floorTiles } = buildNightclub(gradient);
+  scene.background = new THREE.Color(0x120c22);
   scene.add(root);
 
   // Viewmodel lives on a separate near-plane scene so it never clips walls.
@@ -112,9 +114,9 @@ export function createEngine(
         next.z += dz * push;
       }
     }
-    // Keep the player inside the district
-    next.x = Math.max(-44, Math.min(44, next.x));
-    next.z = Math.max(-44, Math.min(44, next.z));
+    // Keep the player inside the club
+    next.x = Math.max(-bounds.x, Math.min(bounds.x, next.x));
+    next.z = Math.max(-bounds.z, Math.min(bounds.z, next.z));
   }
 
   const wish = new THREE.Vector2();
@@ -182,6 +184,15 @@ export function createEngine(
       o.rotation.y += dt * 1.4;
       o.position.y += Math.sin(now * 0.002 + o.position.x) * dt * 0.35;
     }
+    // --- dance floor pulses on a steady 128 BPM beat
+    const beat = (now * 0.002133) % 1;
+    for (let i = 0; i < floorTiles.length; i++) {
+      const t = floorTiles[i]!;
+      const m = t.material as THREE.MeshBasicMaterial;
+      const k = 0.35 + 0.65 * Math.abs(Math.sin(beat * Math.PI + (t.userData['phase'] as number)));
+      m.color.setHSL(((i * 0.07 + now * 0.00008) % 1), 0.85, 0.25 + k * 0.35);
+    }
+
     for (let i = 0; i < animated.flicker.length; i++) {
       const l = animated.flicker[i]!;
       l.intensity =

@@ -14,7 +14,7 @@ export type LoadoutState = {
   unlocked: string[];
   weapon: string;
   /** Set when a weapon was just earned, for the HUD toast. */
-  justUnlocked?: string;
+  justUnlocked?: string | undefined;
 };
 
 const PLAYER_RADIUS = 0.5;

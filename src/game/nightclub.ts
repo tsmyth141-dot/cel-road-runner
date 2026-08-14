@@ -186,20 +186,6 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     const c = rigColors[i % rigColors.length]!;
     addBox(x!, y! - 0.4, z!, 0.9, 0.7, 0.9, 0x0f0b1c, { outline: 0.04 });
     addBox(x!, y! - 0.85, z!, 0.7, 0.2, 0.7, c, { outline: 0, emissive: true });
-    // Volumetric-ish light cone (cheap additive shell)
-    const cone = new THREE.Mesh(
-      new THREE.ConeGeometry(2.2, 4.4, 10, 1, true),
-      new THREE.MeshBasicMaterial({
-        color: c,
-        transparent: true,
-        opacity: 0.16,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    cone.position.set(x!, y! - 2.5, z!);
-    root.add(cone);
     const l = new THREE.PointLight(c, 60, 30, 2);
     l.position.set(x!, y! - 1.2, z!);
     root.add(l);

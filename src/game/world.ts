@@ -2,6 +2,40 @@ import * as THREE from "three";
 
 export type Box = { minX: number; maxX: number; minZ: number; maxZ: number };
 
+/** A door/threshold that teleports the player to another level. */
+export type Exit = {
+  x: number;
+  z: number;
+  r: number;
+  to: string;
+  spawn: [number, number];
+  yaw: number;
+  label: string;
+};
+
+export type Animated = {
+  spin: THREE.Object3D[];
+  flicker: THREE.PointLight[];
+  /** Idle-bobbing props (crowd, pedestrians). */
+  bob: THREE.Object3D[];
+};
+
+export type LevelResult = {
+  root: THREE.Group;
+  colliders: Box[];
+  animated: Animated;
+  bounds: { x: number; z: number };
+  floorTiles: THREE.Mesh[];
+  pickups: THREE.Object3D[];
+  exits: Exit[];
+  background: number;
+  fog: { color: number; near: number; far: number };
+  title: string;
+};
+
+/** Kept for older imports. */
+export type WorldResult = Pick<LevelResult, "root" | "colliders" | "animated">;
+
 /** 4-step toon ramp shared by every material (cheap, one texture). */
 export function makeToonGradient(): THREE.DataTexture {
   const data = new Uint8Array([70, 130, 195, 255]);
@@ -12,22 +46,18 @@ export function makeToonGradient(): THREE.DataTexture {
   return tex;
 }
 
-const OUTLINE_MAT = new THREE.MeshBasicMaterial({
+export const OUTLINE_MAT = new THREE.MeshBasicMaterial({
   color: 0x0d0716,
   side: THREE.BackSide,
 });
 
-export type WorldResult = {
-  root: THREE.Group;
-  colliders: Box[];
-  animated: { spin: THREE.Object3D[]; flicker: THREE.PointLight[] };
-};
-
-export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
+/** Shared blocky-builder toolkit used by every level module. */
+export function makeBuilder(gradient: THREE.DataTexture) {
   const root = new THREE.Group();
   const colliders: Box[] = [];
   const spin: THREE.Object3D[] = [];
   const flicker: THREE.PointLight[] = [];
+  const bob: THREE.Object3D[] = [];
 
   const matCache = new Map<number, THREE.MeshToonMaterial>();
   const toon = (color: number) => {
@@ -49,16 +79,15 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
   };
 
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-  boxGeo.computeBoundingBox();
 
   type Opts = {
     rotY?: number;
     outline?: number;
     collide?: boolean;
     emissive?: boolean;
+    parent?: THREE.Object3D;
   };
 
-  /** One box, optional inverted-hull outline + AABB collider. */
   function addBox(
     x: number,
     y: number,
@@ -69,7 +98,7 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
     color: number,
     opts: Opts = {},
   ) {
-    const { rotY = 0, outline = 0.05, collide = false, emissive = false } = opts;
+    const { rotY = 0, outline = 0.05, collide = false, emissive = false, parent } = opts;
     const group = new THREE.Group();
     const mesh = new THREE.Mesh(boxGeo, emissive ? glow(color) : toon(color));
     mesh.scale.set(w, h, d);
@@ -81,10 +110,9 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
     }
     group.position.set(x, y, z);
     group.rotation.y = rotY;
-    root.add(group);
+    (parent ?? root).add(group);
 
     if (collide) {
-      // Rotation-aware AABB (axis-aligned envelope is fine for blocky geometry)
       const c = Math.abs(Math.cos(rotY));
       const s = Math.abs(Math.sin(rotY));
       const ew = (w * c + d * s) / 2;
@@ -94,212 +122,64 @@ export function buildTestLevel(gradient: THREE.DataTexture): WorldResult {
     return group;
   }
 
-  /* ---------------- Ground: tiled plaza slabs ---------------- */
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(120, 120),
-    toon(0x2a2438),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  root.add(ground);
-
-  // Painted road cross through the plaza
-  const roadMat = toon(0x1e1a2b);
-  const roadA = new THREE.Mesh(new THREE.PlaneGeometry(10, 90), roadMat);
-  roadA.rotation.x = -Math.PI / 2;
-  roadA.position.y = 0.02;
-  const roadB = roadA.clone();
-  roadB.rotation.z = Math.PI / 2;
-  root.add(roadA, roadB);
-
-  // Street-art dashes down the road
-  for (let i = -4; i <= 4; i++) {
-    addBox(0, 0.04, i * 9, 1.1, 0.02, 4, 0xffd400, { outline: 0, emissive: true });
-    addBox(i * 9, 0.04, 0, 4, 0.02, 1.1, 0xff2e7e, { outline: 0, emissive: true });
-  }
-
-  // Central spray-tag disc
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(7, 20), toon(0x3b2f56));
-  disc.rotation.x = -Math.PI / 2;
-  disc.position.y = 0.05;
-  root.add(disc);
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(6.2, 7, 24),
-    glow(0x27d17c),
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.07;
-  root.add(ring);
-
-  /* ---------------- Block architecture ---------------- */
-  type Building = [x: number, z: number, w: number, h: number, d: number, c: number];
-  const buildings: Building[] = [
-    [-24, -22, 16, 14, 14, 0x1f6feb],
-    [-26, 4, 12, 20, 18, 0x6b3fd4],
-    [-22, 26, 14, 11, 12, 0xff7a1a],
-    [24, -26, 18, 17, 14, 0xff2e7e],
-    [27, 2, 12, 23, 20, 0x117a8b],
-    [22, 25, 15, 13, 13, 0xffd400],
-    [0, -34, 26, 16, 12, 0x4b3a8f],
-    [0, 34, 26, 12, 12, 0x27d17c],
-  ];
-
-  for (const [x, z, w, h, d, c] of buildings) {
-    addBox(x, h / 2, z, w, h, d, c, { collide: true, outline: 0.09 });
-    // Chunky roof cap for silhouette variety
-    addBox(x, h + 0.7, z, w * 0.7, 1.4, d * 0.7, 0x241d38, { collide: false });
-    // Window strips (emissive, no outline — very cheap)
-    const rows = Math.max(2, Math.floor(h / 5));
-    for (let r = 0; r < rows; r++) {
-      const wy = 3 + r * 4.2;
-      if (wy > h - 2) break;
-      addBox(x, wy, z + d / 2 + 0.06, w * 0.72, 1.1, 0.1, 0xffe9a8, {
-        outline: 0,
-        emissive: true,
-      });
-      addBox(x, wy, z - d / 2 - 0.06, w * 0.72, 1.1, 0.1, 0x9fe8ff, {
-        outline: 0,
-        emissive: true,
-      });
-    }
-    // Awning ledge
-    addBox(x, 4.4, z + d / 2 + 0.5, w * 0.9, 0.4, 1.2, 0x241d38, {});
-  }
-
-  /* ---------------- Playable clutter ---------------- */
-  // Stacked crates
-  const crates: [number, number, number, number][] = [
-    [-9, -11, 1.8, 0],
-    [-7.4, -11.6, 1.6, 0.4],
-    [-8.4, -9.6, 1.4, 0.9],
-    [11, 9, 2, 0.3],
-    [12.6, 10.2, 1.6, -0.5],
-    [10.2, 11.4, 1.5, 0.2],
-    [-13, 13, 1.9, 0.7],
-  ];
-  for (const [x, z, s, r] of crates) {
-    addBox(x, s / 2, z, s, s, s, 0xd9772f, { rotY: r, collide: true });
-    addBox(x, s / 2, z, s * 0.55, 0.12, s * 1.02, 0x241d38, { rotY: r, outline: 0 });
-  }
-  // Stacked second layer
-  addBox(-9, 1.8 + 0.7, -11, 1.4, 1.4, 1.4, 0xffd400, { rotY: 0.5, collide: false });
-  addBox(11, 2 + 0.75, 9, 1.5, 1.5, 1.5, 0xff2e7e, { rotY: -0.3 });
-
-  // Ramp + platform (gives verticality reading without jump mechanics yet)
-  const ramp = addBox(16, 1.1, -12, 8, 0.5, 6, 0x6b3fd4, { outline: 0.07 });
-  ramp.rotation.z = -0.22;
-  addBox(21.5, 2.2, -12, 4, 0.6, 6, 0x8b5cf6, { collide: true });
-
-  // Barriers / jersey blocks along the road
-  for (let i = 0; i < 6; i++) {
-    const z = -18 + i * 7;
-    addBox(6.2, 0.6, z, 1.1, 1.2, 3.4, i % 2 ? 0xf2f2f2 : 0xff3b30, {
-      collide: true,
-    });
-    addBox(-6.2, 0.6, z + 3, 1.1, 1.2, 3.4, i % 2 ? 0xff3b30 : 0xf2f2f2, {
-      collide: true,
-    });
-  }
-
-  // Street lamps with warm point lights
-  const lampSpots: [number, number][] = [
-    [-8, -4],
-    [8, 6],
-    [-8, 18],
-    [8, -20],
-  ];
-  for (const [x, z] of lampSpots) {
-    addBox(x, 2.6, z, 0.3, 5.2, 0.3, 0x241d38, { collide: true, outline: 0.04 });
-    addBox(x, 5.3, z, 1.4, 0.35, 0.5, 0xfff0c2, { outline: 0.04, emissive: true });
-    const light = new THREE.PointLight(0xffc46b, 18, 16, 2);
-    light.position.set(x, 5, z);
-    root.add(light);
-    flicker.push(light);
-  }
-
-  // Neon billboards on facades
-  const boards: [number, number, number, number, number][] = [
-    [-17.4, 9, 0, 0x00e5ff, Math.PI / 2],
-    [17.6, 11, 0, 0xff2e7e, -Math.PI / 2],
-    [0, 8, -27.6, 0x27d17c, 0],
-  ];
-  for (const [x, y, z, c, r] of boards) {
-    addBox(x, y, z, 7, 4, 0.4, 0x161028, { rotY: r, outline: 0.06 });
-    addBox(x, y, z, 6, 3.1, 0.5, c, { rotY: r, outline: 0, emissive: true });
-    const l = new THREE.PointLight(c, 22, 20, 2);
-    l.position.set(x, y, z);
-    root.add(l);
-    flicker.push(l);
-  }
-
-  // Floating spray-can pickups (spin animation, pure decoration for now)
-  const canGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.9, 8);
-  const capGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.22, 8);
-  const canSpots: [number, number, number][] = [
-    [-4, 1.5, -6],
-    [5, 1.5, 14],
-    [-14, 1.5, 2],
-    [14, 1.5, -3],
-  ];
-  const canColors = [0xff2e7e, 0x27d17c, 0xffd400, 0x00e5ff];
-  canSpots.forEach(([x, y, z], i) => {
+  /** Chunky cel-shaded person made of 6 boxes. Cheap enough to spam. */
+  function addPerson(
+    x: number,
+    z: number,
+    shirt: number,
+    pants: number,
+    skin: number,
+    rotY = 0,
+    scale = 1,
+  ) {
     const g = new THREE.Group();
-    const body = new THREE.Mesh(canGeo, toon(canColors[i]!));
-    const cap = new THREE.Mesh(capGeo, glow(0xfff4d6));
-    cap.position.y = 0.55;
-    const hull = new THREE.Mesh(canGeo, OUTLINE_MAT);
-    hull.scale.set(1.18, 1.1, 1.18);
-    g.add(body, cap, hull);
-    g.position.set(x, y, z);
+    const p = { parent: g, outline: 0.045 };
+    const b = (
+      px: number,
+      py: number,
+      pz: number,
+      w: number,
+      h: number,
+      d: number,
+      c: number,
+    ) => {
+      const m = new THREE.Mesh(boxGeo, toon(c));
+      m.scale.set(w, h, d);
+      const o = new THREE.Mesh(boxGeo, OUTLINE_MAT);
+      o.scale.set(w + 0.09, h + 0.09, d + 0.09);
+      const wrap = new THREE.Group();
+      wrap.add(m, o);
+      wrap.position.set(px, py, pz);
+      g.add(wrap);
+      return wrap;
+    };
+    void p;
+    b(0, 0.45, 0, 0.28, 0.9, 0.28, pants); // left leg
+    b(0.34, 0.45, 0, 0.28, 0.9, 0.28, pants); // right leg
+    b(0.17, 1.35, 0, 0.86, 0.95, 0.44, shirt); // torso
+    b(-0.4, 1.32, 0, 0.22, 0.85, 0.24, skin); // arm
+    b(0.74, 1.32, 0, 0.22, 0.85, 0.24, skin); // arm
+    b(0.17, 2.05, 0, 0.5, 0.5, 0.46, skin); // head
+    b(0.17, 2.33, 0, 0.58, 0.16, 0.54, shirt); // cap
+    g.position.set(x - 0.17 * scale, 0, z);
+    g.rotation.y = rotY;
+    g.scale.setScalar(scale);
     root.add(g);
-    spin.push(g);
-  });
-
-  // Distant skyline silhouettes (no outline, no light cost)
-  for (let i = 0; i < 22; i++) {
-    const a = (i / 22) * Math.PI * 2;
-    const r = 78 + (i % 3) * 8;
-    const h = 14 + ((i * 37) % 26);
-    addBox(Math.cos(a) * r, h / 2, Math.sin(a) * r, 12, h, 12, 0x181230, {
-      outline: 0,
-      rotY: a,
-    });
+    g.userData['phase'] = Math.random() * Math.PI * 2;
+    bob.push(g);
+    return g;
   }
 
-  /* ---------------- Atmosphere ---------------- */
-  const hemi = new THREE.HemisphereLight(0xffb9e6, 0x2a1f4d, 0.9);
-  const key = new THREE.DirectionalLight(0xffd9a0, 1.9);
-  key.position.set(-18, 26, 12);
-  const rim = new THREE.DirectionalLight(0x4fc3ff, 1.0);
-  rim.position.set(16, 10, -20);
-  root.add(hemi, key, rim);
-
-  // Gradient dusk sky: stepped canvas texture on an inverted sphere (cheap, unlit)
-  const skyCanvas = document.createElement("canvas");
-  skyCanvas.width = 4;
-  skyCanvas.height = 64;
-  const ctx = skyCanvas.getContext("2d")!;
-  const stops = ["#2c1b6b", "#4a2280", "#7b2d8e", "#c04a7a", "#ff7a4d", "#ffb066"];
-  for (let i = 0; i < stops.length; i++) {
-    ctx.fillStyle = stops[i]!;
-    ctx.fillRect(0, (i * 64) / stops.length, 4, 64 / stops.length + 1);
-  }
-  const skyTex = new THREE.CanvasTexture(skyCanvas);
-  skyTex.minFilter = THREE.NearestFilter;
-  skyTex.magFilter = THREE.NearestFilter;
-  const sky = new THREE.Mesh(
-    new THREE.SphereGeometry(150, 16, 12),
-    new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false, depthWrite: false }),
-  );
-  sky.renderOrder = -1;
-  root.add(sky);
-
-  return { root, colliders, animated: { spin, flicker } };
+  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson };
 }
 
 /* ---------------- First-person viewmodel ---------------- */
 export function buildViewModel(
   gradient: THREE.DataTexture,
-  palette: { body: number; accent: number } = { body: 0x5b4bd6, accent: 0xff2e7e },
+  palette: { body: number; accent: number; kind?: "fists" | "gun" } = {
+    body: 0x5b4bd6,
+    accent: 0xff2e7e,
+  },
 ): THREE.Group {
   const g = new THREE.Group();
   const toon = (c: number) => new THREE.MeshToonMaterial({ color: c, gradientMap: gradient });
@@ -329,16 +209,22 @@ export function buildViewModel(
     return wrap;
   };
 
-  // Blocky stylised pistol
-  part(0.09, 0.11, 0.34, palette.body, [0, 0, -0.16]); // slide
-  part(0.075, 0.09, 0.16, palette.accent, [0, -0.02, -0.34]); // muzzle block
-  part(0.07, 0.16, 0.09, 0x3b2f66, [0, -0.13, -0.02], [0.25, 0, 0]); // grip
-  part(0.05, 0.03, 0.1, 0xffd400, [0, 0.07, -0.2], [0, 0, 0], 0.008); // sight rail
-
-  // Gloved hand + forearm (cartoon proportions)
-  part(0.13, 0.13, 0.15, 0x27d17c, [0.01, -0.15, 0.02], [0.15, 0, 0.1]); // fist
-  part(0.11, 0.11, 0.3, 0xf2c49b, [0.03, -0.22, 0.2], [0.3, 0, 0.12]); // forearm
-  part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.25, 0.33], [0.3, 0, 0.12]); // cuff
+  if (palette.kind === "fists") {
+    // Bare hands: taped-up brawler fists, no weapon yet.
+    part(0.14, 0.13, 0.16, palette.body, [0, -0.06, -0.18], [0.18, 0, 0.08]); // fist
+    part(0.15, 0.04, 0.17, palette.accent, [0, 0.01, -0.18], [0.18, 0, 0.08]); // knuckle tape
+    part(0.11, 0.11, 0.26, 0xf2c49b, [0.03, -0.15, 0.02], [0.3, 0, 0.12]); // forearm
+    part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.2, 0.14], [0.3, 0, 0.12]); // cuff
+  } else {
+    // Blocky stylised firearm
+    part(0.09, 0.11, 0.34, palette.body, [0, 0, -0.16]); // slide
+    part(0.075, 0.09, 0.16, palette.accent, [0, -0.02, -0.34]); // muzzle block
+    part(0.07, 0.16, 0.09, 0x3b2f66, [0, -0.13, -0.02], [0.25, 0, 0]); // grip
+    part(0.05, 0.03, 0.1, 0xffd400, [0, 0.07, -0.2], [0, 0, 0], 0.008); // sight rail
+    part(0.13, 0.13, 0.15, 0x27d17c, [0.01, -0.15, 0.02], [0.15, 0, 0.1]); // fist
+    part(0.11, 0.11, 0.3, 0xf2c49b, [0.03, -0.22, 0.2], [0.3, 0, 0.12]); // forearm
+    part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.25, 0.33], [0.3, 0, 0.12]); // cuff
+  }
 
   g.position.set(0.21, -0.16, -0.5);
   g.rotation.set(-0.04, 0.14, 0.03);

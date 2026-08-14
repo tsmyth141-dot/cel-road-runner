@@ -31,7 +31,7 @@ function Index() {
   const [save, setSave] = useState<SaveData | null>(null);
   const [session, setSession] = useState<Pick<
     SaveData,
-    "position" | "yaw" | "chapter" | "unlocked" | "weapon"
+    "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone"
   > | null>(null);
 
   useEffect(() => {
@@ -111,6 +111,7 @@ function Index() {
                   chapter: save.chapter,
                   unlocked: save.unlocked,
                   weapon: save.weapon,
+                  zone: save.zone,
                 })
               }
             >

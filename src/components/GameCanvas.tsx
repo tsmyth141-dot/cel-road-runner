@@ -4,7 +4,7 @@ import type { SaveData } from "@/game/save";
 import { WEAPONS } from "@/game/progression";
 
 type Props = {
-  start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon">;
+  start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone">;
   onExit: () => void;
 };
 
@@ -15,6 +15,8 @@ export default function GameCanvas({ start, onExit }: Props) {
   const [loadout, setLoadout] = useState<LoadoutState>({
     unlocked: start.unlocked,
     weapon: start.weapon,
+    zone: start.zone,
+    title: start.zone === "city" ? "Canal Street" : "The Velvet Can",
   });
   const [toast, setToast] = useState<string | null>(null);
 
@@ -61,10 +63,10 @@ export default function GameCanvas({ start, onExit }: Props) {
         {/* corner HUD tags */}
         <div className="absolute bottom-6 left-6 -rotate-2">
           <p className="font-display text-xs uppercase tracking-[0.4em] text-secondary">
-            Chapter 1 — The Velvet Can
+            Chapter 1 — {loadout.zone === "city" ? "Out on the block" : "The Velvet Can"}
           </p>
           <p className="font-display text-4xl uppercase leading-none text-foreground drop-shadow-[3px_3px_0_var(--outline)]">
-            Neon Nightclub
+            {loadout.title}
           </p>
         </div>
 
@@ -96,6 +98,14 @@ export default function GameCanvas({ start, onExit }: Props) {
           </div>
         </div>
 
+        {loadout.prompt && (
+          <div className="absolute left-1/2 top-1/2 mt-16 -translate-x-1/2 rounded-md border-2 border-secondary bg-background/80 px-5 py-2">
+            <p className="font-display text-sm uppercase tracking-[0.35em] text-secondary">
+              {loadout.prompt}
+            </p>
+          </div>
+        )}
+
         {toast && (
           <div className="absolute left-1/2 top-24 -translate-x-1/2 -rotate-1 rounded-md bg-secondary px-6 py-3 text-center shadow-tag">
             <p className="font-display text-[10px] uppercase tracking-[0.4em] text-secondary-foreground/80">
@@ -122,8 +132,8 @@ export default function GameCanvas({ start, onExit }: Props) {
             <li>WASD — Move</li>
             <li>Shift — Sprint</li>
             <li>Mouse — Look</li>
-            <li>1-4 — Swap earned weapons</li>
-            <li>Walk over spray cans to unlock gear</li>
+            <li>1-5 — Swap earned weapons</li>
+            <li>Walk into the lit doorway to change area</li>
             <li>Esc — Pause · Autosaves every 10s</li>
           </ul>
           <div className="flex flex-wrap justify-center gap-3">

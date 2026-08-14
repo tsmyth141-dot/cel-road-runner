@@ -212,7 +212,8 @@ export function buildViewModel(
   if (palette.kind === "fists") {
     // Bare hands: taped-up brawler fists, no weapon yet.
     part(0.14, 0.13, 0.16, palette.body, [0, -0.06, -0.18], [0.18, 0, 0.08]); // fist
-    part(0.15, 0.04, 0.17, palette.accent, [0, 0.01, -0.18], [0.18, 0, 0.08]); // knuckle tape
+    part(0.145, 0.035, 0.05, palette.accent, [0, 0.0, -0.24], [0.18, 0, 0.08]); // knuckle tape
+    part(0.145, 0.035, 0.05, palette.accent, [0, -0.06, -0.24], [0.18, 0, 0.08]); // knuckle tape
     part(0.11, 0.11, 0.26, 0xf2c49b, [0.03, -0.15, 0.02], [0.3, 0, 0.12]); // forearm
     part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.2, 0.14], [0.3, 0, 0.12]); // cuff
   } else {

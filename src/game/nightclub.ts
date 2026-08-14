@@ -14,19 +14,19 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   const pickups: THREE.Object3D[] = [];
 
   /* ---------------- Shell ---------------- */
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_X * 2, ROOM_Z * 2), toon(0x140f24));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_X * 2, ROOM_Z * 2), toon(0x2a2140));
   floor.rotation.x = -Math.PI / 2;
   root.add(floor);
 
-  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_X * 2, ROOM_Z * 2), toon(0x0d0a18));
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_X * 2, ROOM_Z * 2), toon(0x191231));
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = WALL_H;
   root.add(ceiling);
 
-  addBox(0, WALL_H / 2, -ROOM_Z, ROOM_X * 2, WALL_H, 1, 0x241a3d, { collide: true });
-  addBox(0, WALL_H / 2, ROOM_Z, ROOM_X * 2, WALL_H, 1, 0x241a3d, { collide: true });
-  addBox(-ROOM_X, WALL_H / 2, 0, 1, WALL_H, ROOM_Z * 2, 0x241a3d, { collide: true });
-  addBox(ROOM_X, WALL_H / 2, 0, 1, WALL_H, ROOM_Z * 2, 0x241a3d, { collide: true });
+  addBox(0, WALL_H / 2, -ROOM_Z, ROOM_X * 2, WALL_H, 1, 0x352a55, { collide: true });
+  addBox(0, WALL_H / 2, ROOM_Z, ROOM_X * 2, WALL_H, 1, 0x352a55, { collide: true });
+  addBox(-ROOM_X, WALL_H / 2, 0, 1, WALL_H, ROOM_Z * 2, 0x352a55, { collide: true });
+  addBox(ROOM_X, WALL_H / 2, 0, 1, WALL_H, ROOM_Z * 2, 0x352a55, { collide: true });
 
   // Skirting neon strip all the way round for a bold cel outline read
   for (const [x, z, w, d] of [
@@ -192,14 +192,15 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
       new THREE.MeshBasicMaterial({
         color: c,
         transparent: true,
-        opacity: 0.07,
+        opacity: 0.16,
         side: THREE.DoubleSide,
         depthWrite: false,
+        blending: THREE.AdditiveBlending,
       }),
     );
     cone.position.set(x!, y! - 2.5, z!);
     root.add(cone);
-    const l = new THREE.PointLight(c, 26, 22, 2);
+    const l = new THREE.PointLight(c, 60, 30, 2);
     l.position.set(x!, y! - 1.2, z!);
     root.add(l);
     flicker.push(l);
@@ -210,18 +211,18 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   addBox(doorX, 2.2, 14, 0.5, 4.4, 4.4, 0x0f0b1c, { outline: 0.06 });
   addBox(doorX - 0.2, 2.1, 14, 0.2, 3.8, 3.6, 0x27d17c, { outline: 0, emissive: true });
   addBox(doorX + 0.3, 5.1, 14, 0.3, 1.1, 4.6, 0xffd400, { outline: 0.04, emissive: true });
-  const exitGlow = new THREE.PointLight(0x27d17c, 14, 14, 2);
+  const exitGlow = new THREE.PointLight(0x27d17c, 30, 18, 2);
   exitGlow.position.set(doorX + 1.5, 3, 14);
   root.add(exitGlow);
   // Entry corridor rails
   addBox(-16.5, 1.4, 11.4, 8, 2.8, 0.4, 0x1b1430, { collide: true, outline: 0.05 });
 
   /* ---------------- Ambience ---------------- */
-  root.add(new THREE.HemisphereLight(0x9c7bff, 0x241a3d, 0.95));
-  const key = new THREE.DirectionalLight(0xd0b0ff, 0.9);
+  root.add(new THREE.HemisphereLight(0x9c7bff, 0x2e2350, 1.5));
+  const key = new THREE.DirectionalLight(0xd0b0ff, 1.35);
   key.position.set(-8, 14, 10);
   root.add(key);
-  const haze = new THREE.PointLight(0xff5fa8, 12, 26, 2);
+  const haze = new THREE.PointLight(0xff5fa8, 30, 34, 2);
   haze.position.set(0, 4, -8);
   root.add(haze);
   flicker.push(haze);

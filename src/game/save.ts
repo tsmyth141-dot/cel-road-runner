@@ -1,6 +1,8 @@
 export type SaveData = {
-  version: 1;
+  version: 2;
   chapter: string;
+  /** Level the player is standing in ("club" | "city" | ...). */
+  zone: string;
   position: [number, number, number];
   yaw: number;
   /** Weapon ids the player has earned so far (index 0 is always owned). */
@@ -18,11 +20,16 @@ export function loadGame(): SaveData | null {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
-    if (data?.version !== 1 || !Array.isArray(data.position)) return null;
+    if (!data || !Array.isArray(data.position)) return null;
+    if (typeof data.zone !== "string") data.zone = "club";
     if (!Array.isArray(data.unlocked) || data.unlocked.length === 0) {
-      data.unlocked = ["tagger"];
+      data.unlocked = ["fists"];
     }
-    if (typeof data.weapon !== "string") data.weapon = data.unlocked[0]!;
+    if (!data.unlocked.includes("fists")) data.unlocked.unshift("fists");
+    if (typeof data.weapon !== "string" || !data.unlocked.includes(data.weapon)) {
+      data.weapon = data.unlocked[0]!;
+    }
+    data.version = 2;
     return data;
   } catch {
     return null;
@@ -31,7 +38,7 @@ export function loadGame(): SaveData | null {
 
 export function saveGame(data: Omit<SaveData, "version" | "savedAt">) {
   if (typeof window === "undefined") return;
-  const payload: SaveData = { ...data, version: 1, savedAt: Date.now() };
+  const payload: SaveData = { ...data, version: 2, savedAt: Date.now() };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(payload));
   } catch {
@@ -46,8 +53,9 @@ export function clearSave() {
 
 export const NEW_GAME_STATE: Omit<SaveData, "version" | "savedAt"> = {
   chapter: "ch1-the-club",
+  zone: "club",
   position: [0, 1.7, 11],
   yaw: 0,
-  unlocked: ["tagger"],
-  weapon: "tagger",
+  unlocked: ["fists"],
+  weapon: "fists",
 };

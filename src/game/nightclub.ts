@@ -217,6 +217,73 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     flicker.push(l);
   });
 
+
+  /* ---------------- Extra dressing: clutter, signage, rigging ---------------- */
+  // Bottle shelving behind the bar
+  for (let s = 0; s < 3; s++) {
+    addBox(-20.4, 2.2 + s * 1.3, -12, 1.2, 0.16, 10, 0x160f2b, { outline: 0.05 });
+    for (let i = 0; i < 12; i++) {
+      const bz = -16.4 + i * 0.85;
+      const c = [0x27d17c, 0xffd400, 0xff2e7e, 0x00e5ff][(i + s) % 4]!;
+      addBox(-20.4, 2.55 + s * 1.3, bz, 0.26, 0.7, 0.26, c, { outline: 0.03, emissive: i % 3 === 0 });
+    }
+  }
+  // Hanging pendant lamps over the booths
+  for (const pz of [-6, -1, 4, 9]) {
+    addBox(-17.6, 6.6, pz, 0.08, 3.6, 0.08, 0x0f0b1c, { outline: 0.02 });
+    addBox(-17.6, 4.7, pz, 1.1, 0.7, 1.1, 0x241a3d, { outline: 0.05 });
+    addBox(-17.6, 4.32, pz, 0.8, 0.16, 0.8, 0xffc46b, { outline: 0, emissive: true });
+    const pl = new THREE.PointLight(0xffb04f, 12, 12, 2);
+    pl.position.set(-17.6, 4.1, pz);
+    root.add(pl);
+  }
+  // Cable runs and truss ties across the ceiling
+  for (const cz of [-10, -3, 5, 12]) {
+    addBox(0, 8.2, cz, ROOM_X * 2 - 4, 0.12, 0.12, 0x0f0b1c, { outline: 0.02 });
+  }
+  // Stacked crates + kegs in the corners
+  const clutter: [number, number, number, number][] = [
+    [-19.5, 14, 0xd9772f, 1.4], [-17.6, 14.2, 0x4b2f9e, 1.1], [-18.4, 12.4, 0x2b2046, 1.25],
+    [19.4, -13.6, 0x27d17c, 1.3], [19.6, -11.4, 0xffd400, 1.05], [17.8, -13.8, 0x1f6feb, 1.2],
+  ];
+  for (const [x, z, c, sz] of clutter) {
+    addBox(x, sz / 2, z, sz, sz, sz, c, { collide: true, outline: 0.07 });
+    addBox(x, sz + 0.06, z, sz * 0.9, 0.12, sz * 0.9, 0x0f0b1c, { outline: 0.03 });
+  }
+  // Speaker stacks flanking the room
+  for (const sx of [-8, 8]) {
+    for (let i = 0; i < 3; i++) {
+      addBox(sx, 0.9 + i * 1.7, 14.2, 2.2, 1.6, 1.6, 0x110d20, { collide: i === 0, outline: 0.07 });
+      addBox(sx, 0.9 + i * 1.7, 13.35, 1.5, 1.1, 0.14, 0x2b2046, { outline: 0.03 });
+    }
+  }
+  // Poster wall — tilted gig flyers
+  const flyer = [0xff2e7e, 0x00e5ff, 0xffd400, 0x27d17c, 0x8b5cf6, 0xff7a1a];
+  for (let i = 0; i < 8; i++) {
+    const px = -12 + i * 3.4;
+    addBox(px, 3.2 + (i % 3) * 0.5, ROOM_Z - 0.66, 2.1, 2.8, 0.08, 0x0f0b1c, {
+      rotY: 0, outline: 0.05,
+    });
+    addBox(px, 3.2 + (i % 3) * 0.5, ROOM_Z - 0.74, 1.7, 2.3, 0.08, flyer[i % flyer.length]!, {
+      outline: 0, emissive: true,
+    });
+  }
+  // Litter: cups, cans and a dropped tray on the floor
+  const litter: [number, number, number][] = [
+    [-11.4, 6.2, 0xffd400], [-9.8, 8.4, 0x27d17c], [3.2, 12.6, 0xff2e7e],
+    [7.6, -4.2, 0x00e5ff], [-4.4, -9.2, 0xff7a1a], [12.2, 9.4, 0x8b5cf6],
+    [-15.2, 2.4, 0xf2f2f2], [1.4, 5.8, 0xffd400],
+  ];
+  for (const [x, z, c] of litter) {
+    addBox(x, 0.16, z, 0.28, 0.32, 0.28, c, { outline: 0.03 });
+  }
+  // Scuffed floor decals near the dance floor
+  for (let i = 0; i < 5; i++) {
+    addBox(-6 + i * 3, 0.03, 9.5 + (i % 2) * 1.4, 2.6, 0.02, 1.4, 0x3a2c5c, {
+      rotY: i * 0.4, outline: 0,
+    });
+  }
+
   /* ---------------- Exit to the street ---------------- */
   const doorX = -ROOM_X + 0.7;
   addBox(doorX, 2.2, 14, 0.5, 4.4, 4.4, 0x0f0b1c, { outline: 0.06 });

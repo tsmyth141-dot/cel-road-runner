@@ -175,6 +175,83 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   ];
   walkers.forEach(([x, z, c, r], i) => addPerson(x!, z!, c!, 0x241a3d, skinAt(i), r!, 0.95 + (i % 3) * 0.04));
 
+
+  /* ---------------- Street clutter + signage ---------------- */
+  // Overhead cable runs between lamp posts
+  for (const [ax, az, bx, bz] of [
+    [8, -16, 8, 14], [-8, -6, -8, 26], [8, 14, 8, 34], [-14, 22, -30, 22],
+  ] as [number, number, number, number][]) {
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    const len = Math.hypot(bx - ax, bz - az);
+    const rot = Math.atan2(bx - ax, bz - az);
+    addBox(mx, 5.4, mz, 0.08, 0.08, len, 0x0f0b1c, { rotY: rot, outline: 0.02 });
+    for (let i = 1; i < 4; i++) {
+      const t = i / 4;
+      addBox(ax + (bx - ax) * t, 5.15, az + (bz - az) * t, 0.22, 0.36, 0.22,
+        [0xff2e7e, 0xffd400, 0x00e5ff][i % 3]!, { outline: 0.03, emissive: true });
+    }
+  }
+  // Bus stop shelter
+  addBox(-11.5, 1.4, -18, 0.3, 2.8, 7, 0x1c1730, { collide: true, outline: 0.06 });
+  addBox(-13.4, 2.9, -18, 4, 0.25, 7.4, 0x2b2046, { outline: 0.06 });
+  addBox(-11.4, 1.6, -18, 0.12, 2, 6, 0x00e5ff, { outline: 0, emissive: true });
+  addBox(-14.6, 0.6, -18, 1.6, 0.25, 5, 0xd9772f, { collide: true, outline: 0.05 });
+  addBox(-9.6, 1.9, -21.6, 0.6, 1.4, 0.9, 0xffd400, { outline: 0.05, emissive: true });
+  // Phone booth + post box
+  addBox(-9.4, 1.3, 4, 1.2, 2.6, 1.2, 0xff3b30, { collide: true, outline: 0.07 });
+  addBox(-9.4, 1.6, 3.35, 0.8, 1.6, 0.12, 0x9fe8ff, { outline: 0, emissive: true });
+  addBox(9.4, 0.8, -2, 1, 1.6, 1, 0xff2e7e, { collide: true, outline: 0.07 });
+  addBox(9.4, 1.68, -2, 1.2, 0.2, 1.2, 0x120e22, { outline: 0.04 });
+  // A-boards and bollards along the pavement
+  const boards: [number, number, number][] = [
+    [7.6, 12, 0x27d17c], [-7.6, 20, 0xffd400], [7.6, -20, 0x00e5ff], [-7.6, -26, 0xff7a1a],
+  ];
+  for (const [x, z, c] of boards) {
+    addBox(x, 0.7, z, 0.16, 1.4, 1.2, 0x120e22, { rotY: 0.3, collide: true, outline: 0.06 });
+    addBox(x + 0.14, 0.75, z, 0.1, 1.1, 0.9, c, { rotY: 0.3, outline: 0, emissive: true });
+  }
+  for (let i = -4; i <= 4; i++) {
+    if (i === 0) continue;
+    addBox(7, 0.45, i * 5.5, 0.22, 0.9, 0.22, 0xffd400, { outline: 0.04 });
+  }
+  // Rubbish: bin bags, crates and scattered litter
+  const bags: [number, number, number][] = [
+    [-6.8, 13.4, 0x1b1830], [-6.2, 14.4, 0x241a3d], [6.6, -6.4, 0x1b1830],
+    [6.9, -7.6, 0x241a3d], [-6.6, -14.2, 0x1b1830], [17.8, 18.4, 0x241a3d],
+  ];
+  for (const [x, z, c] of bags) {
+    addBox(x, 0.42, z, 1, 0.85, 1, c, { collide: true, outline: 0.06 });
+  }
+  const litter: [number, number, number][] = [
+    [3.4, 8.2, 0xffd400], [-3.8, -3.4, 0x27d17c], [5.2, 20.4, 0xff2e7e],
+    [-18.4, 26.2, 0x00e5ff], [-24.6, 18.8, 0xf2f2f2], [11.4, -12.6, 0xff7a1a],
+  ];
+  for (const [x, z, c] of litter) {
+    addBox(x, 0.12, z, 0.3, 0.24, 0.3, c, { outline: 0.03 });
+  }
+  // Planters with chunky foliage
+  const planters: [number, number][] = [[-14, 12], [-14, 32], [-30, 12], [12, 22]];
+  for (const [x, z] of planters) {
+    addBox(x, 0.5, z, 2, 1, 2, 0x3b3157, { collide: true, outline: 0.07 });
+    addBox(x, 1.6, z, 1.4, 1.4, 1.4, 0x27d17c, { outline: 0.07 });
+    addBox(x, 2.5, z, 0.9, 0.9, 0.9, 0x1f9e5e, { outline: 0.06 });
+  }
+  // Wet-street sheen puddles reflecting the neon
+  for (const [x, z, s] of [
+    [3, 18, 3.4], [-4, -12, 2.6], [10, 4, 3], [-20, 28, 3.8], [-2, 30, 2.4],
+  ] as [number, number, number][]) {
+    addBox(x, 0.03, z, s, 0.02, s * 0.7, 0x3a2c6c, { rotY: x * 0.3, outline: 0 });
+  }
+  // Rooftop water tanks and aerials on the near blocks
+  for (const [x, z, h] of [
+    [-30, -20, 18], [26, -28, 22], [24, 30, 16], [4, 38, 15],
+  ] as [number, number, number][]) {
+    addBox(x - 4, h + 2.6, z, 3, 3.2, 3, 0x241a3d, { outline: 0.08 });
+    addBox(x - 4, h + 4.4, z, 3.4, 0.4, 3.4, 0x120e22, { outline: 0.05 });
+    addBox(x + 5, h + 3.4, z, 0.16, 5, 0.16, 0x0f0b1c, { outline: 0.03 });
+    addBox(x + 5, h + 6, z, 0.5, 0.5, 0.5, 0xff3b30, { outline: 0, emissive: true });
+  }
+
   /* ---------------- Skyline + sky ---------------- */
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 2;

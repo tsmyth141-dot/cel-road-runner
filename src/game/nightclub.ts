@@ -53,7 +53,47 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     addBox(x, y - 1.5, z, 5.4, 0.18, 0.32, 0xffffff, { rotY: r, outline: 0, emissive: true });
   }
 
-  /* ---------------- Dance floor ---------------- */
+  /* ---------------- Wall dressing / architecture ---------------- */
+  // Ribbed pilasters down the long walls with backlit slots between them
+  for (let i = -4; i <= 4; i++) {
+    const px = i * 4.6;
+    for (const wz of [-ROOM_Z + 0.9, ROOM_Z - 0.9]) {
+      addBox(px, WALL_H / 2, wz, 0.9, WALL_H, 0.7, 0x241a3d, { outline: 0.05 });
+      addBox(px, WALL_H / 2 + 0.4, wz - Math.sign(wz) * 0.42, 0.3, WALL_H - 2.4, 0.12,
+        i % 2 === 0 ? 0x8b5cf6 : 0x00e5ff, { outline: 0, emissive: true });
+    }
+  }
+  // Arched alcoves with backlight along the side walls
+  for (const [ax, ar] of [[-ROOM_X + 1.1, Math.PI / 2], [ROOM_X - 1.1, -Math.PI / 2]] as const) {
+    for (const az of [-10, -2, 8, 13]) {
+      addBox(ax, 3.2, az, 3.6, 6, 0.5, 0x120c22, { rotY: ar, outline: 0.06 });
+      addBox(ax + Math.sign(ax) * -0.2, 3.2, az, 2.6, 5, 0.3, 0x3b1d5e, { rotY: ar, outline: 0 });
+      addBox(ax + Math.sign(ax) * -0.3, 6, az, 2.8, 0.18, 0.3, 0xff2e7e, {
+        rotY: ar, outline: 0, emissive: true,
+      });
+    }
+  }
+  // Hanging banners high on the back wall
+  for (let i = 0; i < 5; i++) {
+    const bx = -16 + i * 8;
+    addBox(bx, 7.4, -ROOM_Z + 1.1, 2.2, 3.2, 0.16, 0x0f0b1c, { outline: 0.05 });
+    addBox(bx, 7.4, -ROOM_Z + 1.0, 1.5, 2.4, 0.2, tileColorsSeed[i % tileColorsSeed.length]!, {
+      outline: 0, emissive: true,
+    });
+  }
+  // Deep ceiling coffers so the roof reads as built, not a flat lid
+  for (let i = -3; i <= 3; i++) {
+    addBox(i * 6, WALL_H - 0.35, 0, 1.2, 0.7, ROOM_Z * 2 - 2, 0x120c22, { outline: 0.04 });
+  }
+  // Mezzanine balcony over the bar side
+  addBox(17, 5.2, 0, 10, 0.5, ROOM_Z * 2 - 4, 0x241a3d, { outline: 0.06 });
+  addBox(12.3, 6.1, 0, 0.4, 1.4, ROOM_Z * 2 - 4, 0x1b1430, { outline: 0.05 });
+  addBox(12.3, 6.9, 0, 0.5, 0.16, ROOM_Z * 2 - 4, 0x00e5ff, { outline: 0, emissive: true });
+  for (let i = -3; i <= 3; i++) {
+    addBox(17, 4.6, i * 4, 0.5, 0.9, 0.5, 0x171029, { outline: 0.04 });
+  }
+
+
   const tileColors = [0xff2e7e, 0x00e5ff, 0xffd400, 0x27d17c, 0x8b5cf6];
   const tileGeo = new THREE.PlaneGeometry(2.4, 2.4);
   for (let ix = -3; ix <= 3; ix++) {

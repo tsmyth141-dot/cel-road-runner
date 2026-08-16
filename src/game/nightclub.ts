@@ -127,8 +127,8 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   addBox(0, 2.25, -12, 4.2, 0.3, 1.8, 0x0f0b1c, {});
   addBox(-1.1, 2.5, -12, 1.4, 0.2, 1, 0xff2e7e, { outline: 0.03, emissive: true });
   addBox(1.1, 2.5, -12, 1.4, 0.2, 1, 0x00e5ff, { outline: 0.03, emissive: true });
-  // The DJ, bobbing behind the decks
-  addPerson(0, -13.4, 0x0f0b1c, 0x241a3d, 0xd79a72, 0, 1).position.y = 1;
+  // Decks left running, nobody behind them
+
   // Stacked speakers
   for (const sx of [-8, 8]) {
     addBox(sx, 2.1, -12.5, 3, 4.2, 2.6, 0x110d20, { collide: true, outline: 0.07 });

@@ -269,12 +269,14 @@ export function createEngine(
       o.position.y += Math.sin(now * 0.002 + o.position.x) * dt * 0.35;
     }
 
-    // Crowd / pedestrian idle bob
+    // Crowd / pedestrian idle sway — subtle weight shift, feet stay planted
     for (const p of level.animated.bob) {
       const ph = (p.userData['phase'] as number) ?? 0;
-      p.position.y = Math.max(0, Math.abs(Math.sin(now * 0.004 + ph)) * 0.16);
-      p.rotation.z = Math.sin(now * 0.004 + ph) * 0.05;
+      const t = now * 0.0028 + ph;
+      p.position.y = Math.abs(Math.sin(t)) * 0.03;
+      p.rotation.z = Math.sin(t) * 0.035;
     }
+
 
     // Weapon pickups (none in the early chapters, but the hook stays generic)
     for (let i = level.pickups.length - 1; i >= 0; i--) {

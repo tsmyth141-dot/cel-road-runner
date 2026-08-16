@@ -96,7 +96,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   }
 
 
-  const tileColors = [0xff2e7e, 0x00e5ff, 0xffd400, 0x27d17c, 0x8b5cf6];
+  const tileColors = tileColorsSeed;
   const tileGeo = new THREE.PlaneGeometry(2.4, 2.4);
   for (let ix = -3; ix <= 3; ix++) {
     for (let iz = -2; iz <= 2; iz++) {

@@ -54,6 +54,8 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   }
 
   /* ---------------- Wall dressing / architecture ---------------- */
+  const tileColorsSeed = [0xff2e7e, 0x00e5ff, 0xffd400, 0x27d17c, 0x8b5cf6];
+
   // Ribbed pilasters down the long walls with backlit slots between them
   for (let i = -4; i <= 4; i++) {
     const px = i * 4.6;

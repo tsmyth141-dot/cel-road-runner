@@ -106,13 +106,14 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     opts: Opts = {},
   ) {
     const { rotY = 0, outline = 0.05, collide = false, emissive = false, parent } = opts;
+    const ink = inkWeight(outline);
     const group = new THREE.Group();
     const mesh = new THREE.Mesh(boxGeo, emissive ? glow(color) : toon(color));
     mesh.scale.set(w, h, d);
     group.add(mesh);
-    if (outline > 0) {
+    if (ink > 0) {
       const o = new THREE.Mesh(boxGeo, OUTLINE_MAT);
-      o.scale.set(w + outline * 2, h + outline * 2, d + outline * 2);
+      o.scale.set(w + ink * 2, h + ink * 2, d + ink * 2);
       group.add(o);
     }
     group.position.set(x, y, z);
@@ -153,7 +154,7 @@ export function makeBuilder(gradient: THREE.DataTexture) {
       const m = new THREE.Mesh(boxGeo, toon(c));
       m.scale.set(w, h, d);
       const o = new THREE.Mesh(boxGeo, OUTLINE_MAT);
-      o.scale.set(w + 0.09, h + 0.09, d + 0.09);
+      o.scale.set(w + 0.16, h + 0.16, d + 0.16);
       const wrap = new THREE.Group();
       wrap.add(m, o);
       wrap.position.set(px, py, pz);
@@ -207,7 +208,8 @@ export function buildViewModel(
     wrap.add(m);
     if (outline > 0) {
       const o = new THREE.Mesh(box, OUTLINE_MAT);
-      o.scale.set(w + outline * 2, h + outline * 2, d + outline * 2);
+      const ink = outline * 2.2;
+      o.scale.set(w + ink * 2, h + ink * 2, d + ink * 2);
       wrap.add(o);
     }
     wrap.position.set(...pos);

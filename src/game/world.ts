@@ -47,9 +47,16 @@ export function makeToonGradient(): THREE.DataTexture {
 }
 
 export const OUTLINE_MAT = new THREE.MeshBasicMaterial({
-  color: 0x0d0716,
+  color: 0x08040f,
   side: THREE.BackSide,
 });
+
+/** Global ink-weight multiplier — JSRF-style chunky contour lines. */
+export const OUTLINE_SCALE = 2.1;
+/** Nothing that asks for an outline gets a hairline one. */
+export const OUTLINE_MIN = 0.06;
+export const inkWeight = (o: number) => (o <= 0 ? 0 : Math.max(OUTLINE_MIN, o * OUTLINE_SCALE));
+
 
 /** Shared blocky-builder toolkit used by every level module. */
 export function makeBuilder(gradient: THREE.DataTexture) {

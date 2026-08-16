@@ -157,49 +157,32 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     addBox(18.5, 1.95 + (i % 3) * 1.3, 3 + (i % 7) * 0.9, 0.22, 0.6, 0.22,
       tileColors[i % tileColors.length]!, { outline: 0.02, emissive: true });
   }
-  // Bar stools + drinkers
+  // Bar stools, all empty
   for (let i = -2; i <= 2; i++) {
     addBox(12.4, 0.55, 6 + i * 2, 0.8, 1.1, 0.8, 0xff7a1a, { collide: true });
   }
-  addPerson(11.4, 3.6, 0x27d17c, 0x1f1636, 0xf2c49b, -1.4, 1);
-  addPerson(11.4, 9.4, 0xff7a1a, 0x1f1636, 0x8d5a3b, -1.7, 0.95);
-  // Bartender
-  addPerson(17.6, 6, 0xf2f2f2, 0x0f0b1c, 0xd79a72, 1.6, 1);
 
-  /* ---------------- Booths / seating ---------------- */
+  /* ---------------- Booths / seating (empty) ---------------- */
   for (const bz of [-4, 4, 11]) {
     addBox(-17, 0.5, bz, 6, 1, 3, 0x6b3fd4, { collide: true });
     addBox(-19.4, 1.6, bz, 1, 2.2, 3, 0x4b2f9e, { collide: true, outline: 0.05 });
     addBox(-13.6, 0.9, bz, 2.2, 0.2, 2.2, 0x241a3d, {});
     addBox(-13.6, 1.15, bz, 0.3, 0.3, 0.3, 0x00e5ff, { outline: 0.02, emissive: true });
   }
-  addPerson(-15.4, -4.9, 0x8b5cf6, 0x241a3d, 0xf2c49b, 0.2, 0.95);
-  addPerson(-15.4, 11.9, 0xffd400, 0x241a3d, 0x8d5a3b, 0.1, 1);
+  // Your booth: knocked-over glasses and a spilled tray
+  addBox(-13.6, 1.12, 3.4, 0.22, 0.24, 0.22, 0xffd400, { outline: 0.02, emissive: true });
+  addBox(-13.2, 1.05, 4.6, 0.5, 0.1, 0.3, 0xff2e7e, { outline: 0.02 });
 
-  /* ---------------- Crowd on the dance floor ---------------- */
-  const crowd: [number, number, number, number][] = [
-    [-6.5, 4.5, 0xff2e7e, 0x1f1636],
-    [-3.5, 7.5, 0x00e5ff, 0x2b2046],
-    [-1, 3, 0xffd400, 0x1f1636],
-    [2.5, 6.5, 0x27d17c, 0x2b2046],
-    [5.5, 3.5, 0x8b5cf6, 0x1f1636],
-    [7.5, 7, 0xff7a1a, 0x2b2046],
-    [-7.5, 0.5, 0xf2f2f2, 0x1f1636],
-    [4, 0, 0xff2e7e, 0x2b2046],
-    [0.5, -1.5, 0x00e5ff, 0x1f1636],
-  ];
-  const skins = [0xf2c49b, 0xd79a72, 0x8d5a3b, 0x5c3a24];
-  crowd.forEach(([x, z, shirt, pants], i) => {
-    addPerson(x, z, shirt, pants, skins[i % skins.length]!, (i * 1.7) % 6.28, 0.92 + (i % 3) * 0.05);
-  });
+  // The bartender, standing over you at the booth
+  addPerson(-12.2, 4.2, 0xf2f2f2, 0x0f0b1c, 0xd79a72, -1.5, 1.02);
 
-  /* ---------------- Velvet rope + VIP corner ---------------- */
+  /* ---------------- Velvet rope + VIP corner (deserted) ---------------- */
   addBox(-16, 0.9, -12, 12, 1.8, 4, 0x2b2046, { collide: true, outline: 0.06 });
   addBox(-16, 1.85, -12, 11, 0.2, 3.6, 0x8b5cf6, { outline: 0.03, emissive: true });
   for (let i = 0; i < 4; i++) {
     addBox(-10 + i * 0.02, 0.55, -9.6 + i * 1.4, 0.22, 1.1, 0.22, 0xffd400, { outline: 0.03 });
   }
-  addPerson(-9.2, -8.4, 0x0f0b1c, 0x0f0b1c, 0xd79a72, 3.1, 1.08); // bouncer
+
 
   /* ---------------- Rigging + lights ---------------- */
   const ball = new THREE.Group();

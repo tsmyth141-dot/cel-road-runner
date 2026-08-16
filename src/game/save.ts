@@ -54,8 +54,9 @@ export function clearSave() {
 export const NEW_GAME_STATE: Omit<SaveData, "version" | "savedAt"> = {
   chapter: "ch1-the-club",
   zone: "club",
-  position: [0, 1.7, 11],
-  yaw: 0,
+  position: [-14.2, 1.7, 4.2],
+  yaw: Math.PI / 2,
+
   unlocked: ["fists"],
   weapon: "fists",
 };

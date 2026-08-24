@@ -54,7 +54,12 @@ export function createEngine(
   start: StartState,
   onLockChange: (locked: boolean) => void,
   onLoadout: (state: LoadoutState) => void = () => {},
+  options: {
+    playIntro?: boolean;
+    onCutscene?: (state: CutsceneState) => void;
+  } = {},
 ): EngineHandle {
+  const onCutscene = options.onCutscene ?? (() => {});
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: false,

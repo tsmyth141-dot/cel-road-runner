@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { createEngine, type EngineHandle, type LoadoutState } from "@/game/engine";
+import { createEngine, type CutsceneState, type EngineHandle, type LoadoutState } from "@/game/engine";
 import type { SaveData } from "@/game/save";
 import { WEAPONS } from "@/game/progression";
 
 type Props = {
   start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone">;
+  intro?: boolean;
   onExit: () => void;
 };
 
-export default function GameCanvas({ start, onExit }: Props) {
+export default function GameCanvas({ start, intro = false, onExit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
   const [locked, setLocked] = useState(false);
@@ -19,6 +20,11 @@ export default function GameCanvas({ start, onExit }: Props) {
     title: start.zone === "city" ? "Canal Street" : "The Velvet Can",
   });
   const [toast, setToast] = useState<string | null>(null);
+  const [cut, setCut] = useState<CutsceneState>({
+    active: intro && start.zone === "club",
+    progress: 0,
+    line: null,
+  });
 
   useEffect(() => {
     if (!toast) return;
@@ -28,10 +34,22 @@ export default function GameCanvas({ start, onExit }: Props) {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    const engine = createEngine(canvasRef.current, start, setLocked, (state) => {
-      setLoadout(state);
-      if (state.justUnlocked) setToast(state.justUnlocked);
-    });
+    const engine = createEngine(
+      canvasRef.current,
+      start,
+      setLocked,
+      (state) => {
+        setLoadout(state);
+        if (state.justUnlocked) setToast(state.justUnlocked);
+      },
+      {
+        playIntro: intro,
+        onCutscene: (state) => {
+          setCut(state);
+          if (!state.active) engineRef.current?.requestPointerLock();
+        },
+      },
+    );
     engineRef.current = engine;
     return () => {
       engine.dispose();
@@ -45,7 +63,11 @@ export default function GameCanvas({ start, onExit }: Props) {
       <canvas ref={canvasRef} className="block h-full w-full" />
 
       {/* HUD */}
-      <div className="pointer-events-none absolute inset-0">
+      <div
+        className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${
+          cut.active ? "opacity-0" : "opacity-100"
+        }`}
+      >
         {/* vignette + scanline grade */}
         <div className="absolute inset-0 bg-vignette" />
 
@@ -118,7 +140,46 @@ export default function GameCanvas({ start, onExit }: Props) {
         )}
       </div>
 
-      {!locked && (
+      {cut.active && (
+        <div className="absolute inset-0 select-none">
+          {/* fade up from black */}
+          <div
+            className="pointer-events-none absolute inset-0 bg-background transition-opacity duration-[1600ms]"
+            style={{ opacity: cut.progress > 0.02 ? 0 : 1 }}
+          />
+          {/* letterbox */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[12vh] bg-background" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[12vh] bg-background" />
+          <div className="pointer-events-none absolute inset-0 bg-vignette" />
+
+          <div className="pointer-events-none absolute left-8 top-[14vh] -rotate-2">
+            <p className="font-display text-xs uppercase tracking-[0.5em] text-secondary">
+              Chapter 1 — The Velvet Can
+            </p>
+            <p className="font-display text-2xl uppercase leading-none text-foreground/80">
+              4:47 AM · Closing time
+            </p>
+          </div>
+
+          {cut.line && (
+            <div className="pointer-events-none absolute bottom-[14vh] left-1/2 w-[min(46rem,88vw)] -translate-x-1/2 rounded-md border-2 border-secondary/70 bg-background/85 px-6 py-4 shadow-tag">
+              <p className="font-display text-xs uppercase tracking-[0.45em] text-secondary">
+                {cut.line.speaker}
+              </p>
+              <p className="mt-1 text-lg leading-snug text-foreground">{cut.line.text}</p>
+            </div>
+          )}
+
+          <button
+            className="absolute bottom-[4vh] right-8 rounded-md border-2 border-foreground/40 px-5 py-2 font-display text-xs uppercase tracking-[0.35em] text-muted-foreground transition-colors hover:border-secondary hover:text-secondary"
+            onClick={() => engineRef.current?.skipCutscene()}
+          >
+            Skip scene →
+          </button>
+        </div>
+      )}
+
+      {!locked && !cut.active && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/80 px-6 text-center backdrop-blur-md">
           <div>
             <p className="font-display text-xs uppercase tracking-[0.5em] text-secondary">

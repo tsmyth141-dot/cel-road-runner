@@ -4,11 +4,20 @@ import { buildNightclub } from "./nightclub";
 import { buildCity } from "./city";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
+import { CLUB_INTRO, lineAt, sampleCutscene, type CutsceneLine } from "./cutscene";
 
 export type EngineHandle = {
   dispose: () => void;
   requestPointerLock: () => void;
   save: () => void;
+  skipCutscene: () => void;
+};
+
+export type CutsceneState = {
+  active: boolean;
+  /** 0..1 progress through the scene. */
+  progress: number;
+  line: CutsceneLine | null;
 };
 
 export type LoadoutState = {
@@ -45,7 +54,12 @@ export function createEngine(
   start: StartState,
   onLockChange: (locked: boolean) => void,
   onLoadout: (state: LoadoutState) => void = () => {},
+  options: {
+    playIntro?: boolean;
+    onCutscene?: (state: CutsceneState) => void;
+  } = {},
 ): EngineHandle {
+  const onCutscene = options.onCutscene ?? (() => {});
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: false,
@@ -91,6 +105,28 @@ export function createEngine(
   let recoil = 0;
   let doorCooldown = 0;
   let prompt: string | undefined;
+
+  // --- opening cutscene
+  let cutTime = 0;
+  let cutStart = 0;
+  let cutscene = options.playIntro === true && zone === "club";
+  let cutLine: CutsceneLine | null = null;
+  viewRig.visible = !cutscene;
+  if (cutscene) onCutscene({ active: true, progress: 0, line: null });
+
+  function endCutscene() {
+    if (!cutscene) return;
+    cutscene = false;
+    cutLine = null;
+    viewRig.visible = true;
+    const last = CLUB_INTRO.keys[CLUB_INTRO.keys.length - 1]!;
+    player.set(last.pos[0], EYE_HEIGHT, last.pos[2]);
+    yaw = last.yaw;
+    pitch = 0;
+    velocity.set(0, 0);
+    onCutscene({ active: false, progress: 1, line: null });
+  }
+
 
   const emitLoadout = (justUnlocked?: string) =>
     onLoadout({
@@ -157,7 +193,7 @@ export function createEngine(
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
 
   const onMouseMove = (e: MouseEvent) => {
-    if (document.pointerLockElement !== canvas) return;
+    if (cutscene || document.pointerLockElement !== canvas) return;
     yaw -= e.movementX * 0.0021;
     pitch -= e.movementY * 0.0021;
     pitch = Math.max(-1.45, Math.min(1.45, pitch));
@@ -219,9 +255,32 @@ export function createEngine(
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
 
+    if (cutscene) {
+      // wall-clock driven so a slow frame rate never stretches the scene
+      if (cutStart === 0) cutStart = now;
+      cutTime = (now - cutStart) / 1000;
+      const k = sampleCutscene(CLUB_INTRO, cutTime);
+      player.set(k.pos[0], k.pos[1], k.pos[2]);
+      const drift = Math.sin(cutTime * 0.9) * 0.012;
+      camera.position.set(k.pos[0], k.pos[1] + drift, k.pos[2]);
+      camera.rotation.set(k.pitch + drift * 0.4, k.yaw, Math.sin(cutTime * 0.6) * 0.02, "YXZ");
+      yaw = k.yaw;
+      const nextLine = lineAt(CLUB_INTRO, cutTime);
+      if (nextLine !== cutLine) {
+        cutLine = nextLine;
+        onCutscene({
+          active: true,
+          progress: Math.min(cutTime / CLUB_INTRO.duration, 1),
+          line: cutLine,
+        });
+      }
+      if (cutTime >= CLUB_INTRO.duration) endCutscene();
+    }
+
     const fx = -Math.sin(yaw);
     const fz = -Math.cos(yaw);
     wish.set(0, 0);
+    if (cutscene) keys.clear();
     if (keys.has("KeyW") || keys.has("ArrowUp")) wish.x += fx, (wish.y += fz);
     if (keys.has("KeyS") || keys.has("ArrowDown")) wish.x -= fx, (wish.y -= fz);
     if (keys.has("KeyD") || keys.has("ArrowRight")) wish.x += -fz, (wish.y += fx);
@@ -251,8 +310,10 @@ export function createEngine(
     const bobY = Math.sin(bobTime * 2) * bobAmp;
     const bobX = Math.cos(bobTime) * bobAmp * 0.6;
 
-    camera.position.set(player.x + bobX * 0.4, player.y + bobY, player.z);
-    camera.rotation.set(pitch, yaw, Math.sin(bobTime) * bobAmp * 0.12, "YXZ");
+    if (!cutscene) {
+      camera.position.set(player.x + bobX * 0.4, player.y + bobY, player.z);
+      camera.rotation.set(pitch, yaw, Math.sin(bobTime) * bobAmp * 0.12, "YXZ");
+    }
 
     swayX = THREE.MathUtils.damp(swayX, 0, 8, dt);
     swayY = THREE.MathUtils.damp(swayY, 0, 8, dt);
@@ -383,5 +444,6 @@ export function createEngine(
       canvas.requestPointerLock();
     },
     save: persist,
+    skipCutscene: endCutscene,
   };
 }

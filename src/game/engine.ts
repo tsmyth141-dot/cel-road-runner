@@ -106,6 +106,27 @@ export function createEngine(
   let doorCooldown = 0;
   let prompt: string | undefined;
 
+  // --- opening cutscene
+  let cutTime = 0;
+  let cutscene = options.playIntro === true && zone === "club";
+  let cutLine: CutsceneLine | null = null;
+  viewRig.visible = !cutscene;
+  if (cutscene) onCutscene({ active: true, progress: 0, line: null });
+
+  function endCutscene() {
+    if (!cutscene) return;
+    cutscene = false;
+    cutLine = null;
+    viewRig.visible = true;
+    const last = CLUB_INTRO.keys[CLUB_INTRO.keys.length - 1]!;
+    player.set(last.pos[0], EYE_HEIGHT, last.pos[2]);
+    yaw = last.yaw;
+    pitch = 0;
+    velocity.set(0, 0);
+    onCutscene({ active: false, progress: 1, line: null });
+  }
+
+
   const emitLoadout = (justUnlocked?: string) =>
     onLoadout({
       unlocked: [...unlocked],

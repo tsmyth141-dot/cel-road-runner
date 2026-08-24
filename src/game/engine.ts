@@ -192,7 +192,7 @@ export function createEngine(
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
 
   const onMouseMove = (e: MouseEvent) => {
-    if (document.pointerLockElement !== canvas) return;
+    if (cutscene || document.pointerLockElement !== canvas) return;
     yaw -= e.movementX * 0.0021;
     pitch -= e.movementY * 0.0021;
     pitch = Math.max(-1.45, Math.min(1.45, pitch));

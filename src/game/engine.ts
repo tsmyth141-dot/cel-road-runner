@@ -108,6 +108,7 @@ export function createEngine(
 
   // --- opening cutscene
   let cutTime = 0;
+  let cutStart = 0;
   let cutscene = options.playIntro === true && zone === "club";
   let cutLine: CutsceneLine | null = null;
   viewRig.visible = !cutscene;
@@ -255,7 +256,9 @@ export function createEngine(
     last = now;
 
     if (cutscene) {
-      cutTime += dt;
+      // wall-clock driven so a slow frame rate never stretches the scene
+      if (cutStart === 0) cutStart = now;
+      cutTime = (now - cutStart) / 1000;
       const k = sampleCutscene(CLUB_INTRO, cutTime);
       player.set(k.pos[0], k.pos[1], k.pos[2]);
       const drift = Math.sin(cutTime * 0.9) * 0.012;

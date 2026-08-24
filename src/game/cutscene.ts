@@ -25,8 +25,8 @@ export const CLUB_INTRO: CutsceneScript = {
     { t: 2.2, pos: [-14.2, 1.05, 4.25], yaw: -0.85, pitch: -0.62 },
     { t: 4.2, pos: [-14.15, 1.3, 4.3], yaw: -1.3, pitch: -0.32 },
     { t: 7.5, pos: [-14.0, 1.62, 4.3], yaw: -1.94, pitch: -0.06 },
-    { t: 13, pos: [-13.8, 1.68, 4.25], yaw: -1.98, pitch: 0.02 },
-    { t: 19, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0 },
+    { t: 13, pos: [-13.8, 1.68, 4.25], yaw: -1.98, pitch: 0.12 },
+    { t: 19, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0.08 },
   ],
   lines: [
     { from: 0.9, to: 4.4, line: { speaker: BARTENDER, text: "Hey. Hey — you still breathing down there?" } },

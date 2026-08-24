@@ -33,6 +33,7 @@ function Index() {
     SaveData,
     "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone"
   > | null>(null);
+  const [intro, setIntro] = useState(false);
 
   useEffect(() => {
     setSave(loadGame());
@@ -44,6 +45,7 @@ function Index() {
         <Suspense fallback={<div className="fixed inset-0 bg-background" />}>
           <GameCanvas
             start={session}
+            intro={intro}
             onExit={() => {
               setSession(null);
               setSave(loadGame());
@@ -91,6 +93,7 @@ function Index() {
               className="group relative w-full overflow-hidden rounded-md bg-primary px-8 py-5 text-left font-display text-2xl uppercase tracking-widest text-primary-foreground shadow-tag transition-transform hover:-translate-y-1"
               onClick={() => {
                 clearSave();
+                setIntro(true);
                 setSession(NEW_GAME_STATE);
               }}
             >
@@ -103,7 +106,8 @@ function Index() {
             <button
               disabled={!save}
               className="group relative w-full overflow-hidden rounded-md border-2 border-foreground/70 bg-card px-8 py-5 text-left font-display text-2xl uppercase tracking-widest text-foreground transition-transform enabled:hover:-translate-y-1 enabled:hover:border-accent enabled:hover:text-accent disabled:cursor-not-allowed disabled:opacity-30"
-              onClick={() =>
+              onClick={() => {
+                setIntro(false);
                 save &&
                 setSession({
                   position: save.position,
@@ -112,8 +116,8 @@ function Index() {
                   unlocked: save.unlocked,
                   weapon: save.weapon,
                   zone: save.zone,
-                })
-              }
+                });
+              }}
             >
               Continue
               <span className="absolute right-6 top-1/2 -translate-y-1/2 text-base opacity-60">

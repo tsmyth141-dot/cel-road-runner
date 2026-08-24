@@ -307,8 +307,10 @@ export function createEngine(
     const bobY = Math.sin(bobTime * 2) * bobAmp;
     const bobX = Math.cos(bobTime) * bobAmp * 0.6;
 
-    camera.position.set(player.x + bobX * 0.4, player.y + bobY, player.z);
-    camera.rotation.set(pitch, yaw, Math.sin(bobTime) * bobAmp * 0.12, "YXZ");
+    if (!cutscene) {
+      camera.position.set(player.x + bobX * 0.4, player.y + bobY, player.z);
+      camera.rotation.set(pitch, yaw, Math.sin(bobTime) * bobAmp * 0.12, "YXZ");
+    }
 
     swayX = THREE.MathUtils.damp(swayX, 0, 8, dt);
     swayY = THREE.MathUtils.damp(swayY, 0, 8, dt);

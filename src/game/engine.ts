@@ -254,9 +254,30 @@ export function createEngine(
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
 
+    if (cutscene) {
+      cutTime += dt;
+      const k = sampleCutscene(CLUB_INTRO, cutTime);
+      player.set(k.pos[0], k.pos[1], k.pos[2]);
+      const drift = Math.sin(cutTime * 0.9) * 0.012;
+      camera.position.set(k.pos[0], k.pos[1] + drift, k.pos[2]);
+      camera.rotation.set(k.pitch + drift * 0.4, k.yaw, Math.sin(cutTime * 0.6) * 0.02, "YXZ");
+      yaw = k.yaw;
+      const nextLine = lineAt(CLUB_INTRO, cutTime);
+      if (nextLine !== cutLine) {
+        cutLine = nextLine;
+        onCutscene({
+          active: true,
+          progress: Math.min(cutTime / CLUB_INTRO.duration, 1),
+          line: cutLine,
+        });
+      }
+      if (cutTime >= CLUB_INTRO.duration) endCutscene();
+    }
+
     const fx = -Math.sin(yaw);
     const fz = -Math.cos(yaw);
     wish.set(0, 0);
+    if (cutscene) keys.clear();
     if (keys.has("KeyW") || keys.has("ArrowUp")) wish.x += fx, (wish.y += fz);
     if (keys.has("KeyS") || keys.has("ArrowDown")) wish.x -= fx, (wish.y -= fz);
     if (keys.has("KeyD") || keys.has("ArrowRight")) wish.x += -fz, (wish.y += fx);

@@ -441,5 +441,6 @@ export function createEngine(
       canvas.requestPointerLock();
     },
     save: persist,
+    skipCutscene: endCutscene,
   };
 }

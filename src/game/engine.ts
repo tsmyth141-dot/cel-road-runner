@@ -4,11 +4,20 @@ import { buildNightclub } from "./nightclub";
 import { buildCity } from "./city";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
+import { CLUB_INTRO, lineAt, sampleCutscene, type CutsceneLine } from "./cutscene";
 
 export type EngineHandle = {
   dispose: () => void;
   requestPointerLock: () => void;
   save: () => void;
+  skipCutscene: () => void;
+};
+
+export type CutsceneState = {
+  active: boolean;
+  /** 0..1 progress through the scene. */
+  progress: number;
+  line: CutsceneLine | null;
 };
 
 export type LoadoutState = {

@@ -111,13 +111,18 @@ export function createEngine(
   let cutStart = 0;
   let cutscene = options.playIntro === true && zone === "club";
   let cutLine: CutsceneLine | null = null;
+  let cutsceneEnded = !cutscene;
   viewRig.visible = !cutscene;
   if (cutscene) onCutscene({ active: true, progress: 0, line: null });
 
   function endCutscene() {
-    if (!cutscene) return;
+    if (cutsceneEnded) return;
+    cutsceneEnded = true;
     cutscene = false;
+    cutTime = CLUB_INTRO.duration;
+    cutStart = 0;
     cutLine = null;
+    keys.clear();
     viewRig.visible = true;
     const last = CLUB_INTRO.keys[CLUB_INTRO.keys.length - 1]!;
     player.set(last.pos[0], EYE_HEIGHT, last.pos[2]);
@@ -125,6 +130,21 @@ export function createEngine(
     pitch = 0;
     velocity.set(0, 0);
     onCutscene({ active: false, progress: 1, line: null });
+  }
+
+  function requestPointerLock() {
+    if (document.pointerLockElement === canvas) return;
+    const request = canvas.requestPointerLock();
+    request?.catch(() => {
+      // Browsers may reject lock when the cutscene ends without a user gesture.
+      // The pause overlay remains available as a safe manual fallback.
+    });
+  }
+
+  function skipCutscene() {
+    endCutscene();
+    // Kept in the same click gesture as the Skip button so Chrome permits it.
+    requestPointerLock();
   }
 
 
@@ -441,9 +461,9 @@ export function createEngine(
       renderer.dispose();
     },
     requestPointerLock() {
-      canvas.requestPointerLock();
+      requestPointerLock();
     },
     save: persist,
-    skipCutscene: endCutscene,
+    skipCutscene,
   };
 }

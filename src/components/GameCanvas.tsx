@@ -12,6 +12,7 @@ type Props = {
 export default function GameCanvas({ start, intro = false, onExit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
+  const cutsceneActiveRef = useRef(intro && start.zone === "club");
   const [locked, setLocked] = useState(false);
   const [loadout, setLoadout] = useState<LoadoutState>({
     unlocked: start.unlocked,
@@ -45,8 +46,8 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       {
         playIntro: intro,
         onCutscene: (state) => {
+          cutsceneActiveRef.current = state.active;
           setCut(state);
-          if (!state.active) engineRef.current?.requestPointerLock();
         },
       },
     );
@@ -172,7 +173,12 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
 
           <button
             className="absolute bottom-[4vh] right-8 rounded-md border-2 border-foreground/40 px-5 py-2 font-display text-xs uppercase tracking-[0.35em] text-muted-foreground transition-colors hover:border-secondary hover:text-secondary"
-            onClick={() => engineRef.current?.skipCutscene()}
+            onClick={() => {
+              if (!cutsceneActiveRef.current) return;
+              cutsceneActiveRef.current = false;
+              setCut((state) => ({ ...state, active: false, line: null, progress: 1 }));
+              engineRef.current?.skipCutscene();
+            }}
           >
             Skip scene →
           </button>

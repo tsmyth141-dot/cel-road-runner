@@ -37,6 +37,22 @@ export const CLUB_INTRO: CutsceneScript = {
   ],
 };
 
+/** Optional follow-up: inspect the wrecked booth after regaining control. */
+export const BOOTH_AFTERSHOCK: CutsceneScript = {
+  id: "ch1-booth-aftershock",
+  duration: 8.5,
+  keys: [
+    { t: 0, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0.08 },
+    { t: 2.2, pos: [-14.0, 1.55, 4.15], yaw: -0.82, pitch: -0.48 },
+    { t: 5.4, pos: [-13.9, 1.62, 4.18], yaw: -1.72, pitch: -0.08 },
+    { t: 8.5, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0.04 },
+  ],
+  lines: [
+    { from: 1.2, to: 4.2, line: { speaker: "You", text: "Empty glasses. Spilled ice. None of this is coming back to me." } },
+    { from: 4.5, to: 8.2, line: { speaker: BARTENDER, text: "Don't force it. Get some air before the room starts spinning again." } },
+  ],
+};
+
 export function sampleCutscene(script: CutsceneScript, t: number): CutsceneKey {
   const keys = script.keys;
   if (t <= keys[0]!.t) return keys[0]!;

@@ -4,7 +4,14 @@ import { buildNightclub } from "./nightclub";
 import { buildCity } from "./city";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
-import { CLUB_INTRO, lineAt, sampleCutscene, type CutsceneLine } from "./cutscene";
+import {
+  BOOTH_AFTERSHOCK,
+  CLUB_INTRO,
+  lineAt,
+  sampleCutscene,
+  type CutsceneLine,
+  type CutsceneScript,
+} from "./cutscene";
 
 export type EngineHandle = {
   dispose: () => void;
@@ -41,7 +48,7 @@ const FRICTION = 12;
 
 type StartState = Pick<
   SaveData,
-  "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone"
+  "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone" | "storyFlags"
 >;
 
 const LEVELS: Record<string, (g: THREE.DataTexture) => LevelResult> = {
@@ -105,11 +112,14 @@ export function createEngine(
   let recoil = 0;
   let doorCooldown = 0;
   let prompt: string | undefined;
+  const storyFlags = new Set(start.storyFlags ?? []);
+  let boothInRange = false;
 
   // --- opening cutscene
   let cutTime = 0;
   let cutStart = 0;
-  let cutscene = options.playIntro === true && zone === "club";
+  let activeScript: CutsceneScript | null = options.playIntro === true && zone === "club" ? CLUB_INTRO : null;
+  let cutscene = activeScript !== null;
   let cutLine: CutsceneLine | null = null;
   let cutsceneEnded = !cutscene;
   viewRig.visible = !cutscene;
@@ -117,19 +127,42 @@ export function createEngine(
 
   function endCutscene() {
     if (cutsceneEnded) return;
+    const finishedScript = activeScript;
     cutsceneEnded = true;
     cutscene = false;
-    cutTime = CLUB_INTRO.duration;
+    cutTime = finishedScript?.duration ?? cutTime;
     cutStart = 0;
     cutLine = null;
     keys.clear();
     viewRig.visible = true;
-    const last = CLUB_INTRO.keys[CLUB_INTRO.keys.length - 1]!;
-    player.set(last.pos[0], EYE_HEIGHT, last.pos[2]);
-    yaw = last.yaw;
+    const lastKey = finishedScript?.keys[finishedScript.keys.length - 1];
+    if (lastKey) {
+      player.set(lastKey.pos[0], EYE_HEIGHT, lastKey.pos[2]);
+      yaw = lastKey.yaw;
+    }
     pitch = 0;
     velocity.set(0, 0);
+    if (finishedScript === BOOTH_AFTERSHOCK) storyFlags.add(BOOTH_AFTERSHOCK.id);
+    activeScript = null;
+    persist();
     onCutscene({ active: false, progress: 1, line: null });
+  }
+
+  function startCutscene(script: CutsceneScript) {
+    if (cutscene) return;
+    activeScript = script;
+    cutscene = true;
+    cutsceneEnded = false;
+    cutTime = 0;
+    cutStart = 0;
+    cutLine = null;
+    keys.clear();
+    velocity.set(0, 0);
+    prompt = undefined;
+    viewRig.visible = false;
+    if (document.pointerLockElement === canvas) document.exitPointerLock();
+    emitLoadout();
+    onCutscene({ active: true, progress: 0, line: null });
   }
 
   function requestPointerLock() {
@@ -202,6 +235,11 @@ export function createEngine(
 
   const keys = new Set<string>();
   const onKeyDown = (e: KeyboardEvent) => {
+    if (e.code === "KeyE" && !e.repeat && !cutscene && boothInRange) {
+      e.preventDefault();
+      startCutscene(BOOTH_AFTERSHOCK);
+      return;
+    }
     keys.add(e.code);
     if (e.code === "Space") e.preventDefault();
     const slot = Number(e.code.replace("Digit", ""));
@@ -279,22 +317,27 @@ export function createEngine(
       // wall-clock driven so a slow frame rate never stretches the scene
       if (cutStart === 0) cutStart = now;
       cutTime = (now - cutStart) / 1000;
-      const k = sampleCutscene(CLUB_INTRO, cutTime);
+      const script = activeScript;
+      if (!script) {
+        endCutscene();
+        return;
+      }
+      const k = sampleCutscene(script, cutTime);
       player.set(k.pos[0], k.pos[1], k.pos[2]);
       const drift = Math.sin(cutTime * 0.9) * 0.012;
       camera.position.set(k.pos[0], k.pos[1] + drift, k.pos[2]);
       camera.rotation.set(k.pitch + drift * 0.4, k.yaw, Math.sin(cutTime * 0.6) * 0.02, "YXZ");
       yaw = k.yaw;
-      const nextLine = lineAt(CLUB_INTRO, cutTime);
+      const nextLine = lineAt(script, cutTime);
       if (nextLine !== cutLine) {
         cutLine = nextLine;
         onCutscene({
           active: true,
-          progress: Math.min(cutTime / CLUB_INTRO.duration, 1),
+          progress: Math.min(cutTime / script.duration, 1),
           line: cutLine,
         });
       }
-      if (cutTime >= CLUB_INTRO.duration) endCutscene();
+      if (cutTime >= script.duration) endCutscene();
     }
 
     const fx = -Math.sin(yaw);
@@ -380,6 +423,13 @@ export function createEngine(
     // Doors between levels
     doorCooldown = Math.max(0, doorCooldown - dt);
     let nearPrompt: string | undefined;
+    boothInRange = false;
+    if (!cutscene && zone === "club" && !storyFlags.has(BOOTH_AFTERSHOCK.id)) {
+      const boothDx = player.x - -14.0;
+      const boothDz = player.z - 4.2;
+      boothInRange = boothDx * boothDx + boothDz * boothDz < 3.2 * 3.2;
+      if (boothInRange) nearPrompt = "E · Check the booth";
+    }
     for (const ex of level.exits) {
       const dx = ex.x - player.x;
       const dz = ex.z - player.z;
@@ -437,6 +487,7 @@ export function createEngine(
       yaw,
       unlocked: [...unlocked],
       weapon: weapon.id,
+      storyFlags: [...storyFlags],
     });
   }
 

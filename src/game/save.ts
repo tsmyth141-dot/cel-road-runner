@@ -9,6 +9,8 @@ export type SaveData = {
   unlocked: string[];
   /** Currently equipped weapon id. */
   weapon: string;
+  /** One-time story moments already completed. */
+  storyFlags: string[];
   savedAt: number;
 };
 
@@ -29,6 +31,7 @@ export function loadGame(): SaveData | null {
     if (typeof data.weapon !== "string" || !data.unlocked.includes(data.weapon)) {
       data.weapon = data.unlocked[0]!;
     }
+    if (!Array.isArray(data.storyFlags)) data.storyFlags = [];
     data.version = 2;
     return data;
   } catch {
@@ -59,4 +62,5 @@ export const NEW_GAME_STATE: Omit<SaveData, "version" | "savedAt"> = {
 
   unlocked: ["fists"],
   weapon: "fists",
+  storyFlags: [],
 };

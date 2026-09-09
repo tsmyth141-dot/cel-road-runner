@@ -31,7 +31,7 @@ function Index() {
   const [save, setSave] = useState<SaveData | null>(null);
   const [session, setSession] = useState<Pick<
     SaveData,
-    "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone"
+    "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone" | "storyFlags"
   > | null>(null);
   const [intro, setIntro] = useState(false);
 
@@ -116,6 +116,7 @@ function Index() {
                   unlocked: save.unlocked,
                   weapon: save.weapon,
                   zone: save.zone,
+                  storyFlags: save.storyFlags,
                 });
               }}
             >

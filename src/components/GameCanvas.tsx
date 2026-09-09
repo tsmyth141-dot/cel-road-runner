@@ -4,7 +4,7 @@ import type { SaveData } from "@/game/save";
 import { WEAPONS } from "@/game/progression";
 
 type Props = {
-  start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone">;
+  start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone" | "storyFlags">;
   intro?: boolean;
   onExit: () => void;
 };

@@ -314,6 +314,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     bounds: { x: ROOM_X - 1, z: ROOM_Z - 1 },
     floorTiles,
     pickups,
+    enemies: [],
     exits: [
       { x: doorX + 1.6, z: 14, r: 2.2, to: "city", spawn: [-13, 6], yaw: -Math.PI / 2, label: "Step outside" },
     ],

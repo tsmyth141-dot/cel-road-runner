@@ -37,6 +37,9 @@ export type LoadoutState = {
   title: string;
   /** Nearby door prompt, if any. */
   prompt?: string | undefined;
+  health: number;
+  maxHealth: number;
+  enemies: number;
 };
 
 const PLAYER_RADIUS = 0.5;
@@ -45,6 +48,7 @@ const WALK = 6.0;
 const SPRINT = 10.0;
 const ACCEL = 42;
 const FRICTION = 12;
+const MAX_HEALTH = 100;
 
 type StartState = Pick<
   SaveData,
@@ -114,6 +118,11 @@ export function createEngine(
   let prompt: string | undefined;
   const storyFlags = new Set(start.storyFlags ?? []);
   let boothInRange = false;
+  let health = MAX_HEALTH;
+  let livingEnemies = level.enemies.length;
+  let lastHudHealth = health;
+  let lastHudEnemies = livingEnemies;
+  const raycaster = new THREE.Raycaster();
 
   // --- opening cutscene
   let cutTime = 0;
@@ -189,6 +198,9 @@ export function createEngine(
       zone,
       title: level.title,
       prompt,
+      health,
+      maxHealth: MAX_HEALTH,
+      enemies: livingEnemies,
     });
   emitLoadout();
 
@@ -211,6 +223,8 @@ export function createEngine(
     disposeLevel(level);
     zone = to;
     level = build(gradient);
+    livingEnemies = level.enemies.length;
+    lastHudEnemies = livingEnemies;
     scene.add(level.root);
     applyLevelAtmosphere();
     player.set(spawn[0], EYE_HEIGHT, spawn[1]);
@@ -262,6 +276,28 @@ export function createEngine(
   const onMouseDown = () => {
     if (document.pointerLockElement !== canvas) return;
     recoil = 1;
+    if (cutscene) return;
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const maxRange = weapon.kind === "gun" ? 55 : 1.8;
+    raycaster.far = maxRange;
+    const enemyObjects = level.enemies.filter((enemy) => enemy.health > 0).map((enemy) => enemy.root);
+    const hit = raycaster.intersectObjects(enemyObjects, true)[0];
+    if (!hit) return;
+    let target: THREE.Object3D | null = hit.object;
+    let enemyRoot: THREE.Group | undefined;
+    while (target && !enemyRoot) {
+      enemyRoot = target.userData["enemyRoot"] as THREE.Group | undefined;
+      target = target.parent;
+    }
+    const enemy = level.enemies.find((candidate) => candidate.root === enemyRoot);
+    if (!enemy || enemy.health <= 0) return;
+    enemy.health -= weapon.kind === "gun" ? 34 : 22;
+    enemy.root.scale.set(1.15, 0.88, 1.15);
+    if (enemy.health <= 0) {
+      enemy.root.visible = false;
+      livingEnemies = Math.max(0, livingEnemies - 1);
+      emitLoadout();
+    }
   };
 
   const onLock = () => onLockChange(document.pointerLockElement === canvas);
@@ -401,23 +437,61 @@ export function createEngine(
       p.rotation.z = Math.sin(t) * 0.035;
     }
 
+    // Lightweight chapter enemies: patrol until nearby, then close in and strike.
+    if (!cutscene && zone === "city") {
+      for (const enemy of level.enemies) {
+        if (enemy.health <= 0 || !enemy.root.visible) continue;
+        enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
+        enemy.root.scale.x = THREE.MathUtils.damp(enemy.root.scale.x, 1, 10, dt);
+        enemy.root.scale.y = THREE.MathUtils.damp(enemy.root.scale.y, 1, 10, dt);
+        enemy.root.scale.z = THREE.MathUtils.damp(enemy.root.scale.z, 1, 10, dt);
+        const dx = player.x - enemy.root.position.x;
+        const dz = player.z - enemy.root.position.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance < 15 && distance > 1.35) {
+          const targetYaw = Math.atan2(dx, dz);
+          const yawDiff = Math.atan2(Math.sin(targetYaw - enemy.root.rotation.y), Math.cos(targetYaw - enemy.root.rotation.y));
+          enemy.root.rotation.y += THREE.MathUtils.clamp(yawDiff, -2.8 * dt, 2.8 * dt);
+          enemy.root.position.x += (dx / distance) * enemy.speed * dt;
+          enemy.root.position.z += (dz / distance) * enemy.speed * dt;
+        } else if (distance <= 1.35 && enemy.attackCooldown === 0) {
+          health = Math.max(0, health - enemy.damage);
+          enemy.attackCooldown = 1.1;
+          recoil = Math.max(recoil, 0.45);
+        }
+      }
+    }
 
-    // Weapon pickups (none in the early chapters, but the hook stays generic)
+
+    // Chapter pickups: the first gun at home, plus simple health cans.
     for (let i = level.pickups.length - 1; i >= 0; i--) {
       const p = level.pickups[i]!;
       const dx = p.position.x - player.x;
       const dz = p.position.z - player.z;
       if (dx * dx + dz * dz < 1.6 * 1.6) {
-        const next = WEAPONS.find((w) => !unlocked.has(w.id));
+        const kind = p.userData["pickupKind"] as string | undefined;
         level.pickups.splice(i, 1);
         const spinIdx = level.animated.spin.indexOf(p);
         if (spinIdx >= 0) level.animated.spin.splice(spinIdx, 1);
         p.removeFromParent();
-        if (next) {
-          unlocked.add(next.id);
-          equip(next, next.name);
+        if (kind === "weapon") {
+          const weaponId = p.userData["weaponId"] as string | undefined;
+          const next = WEAPONS.find((w) => w.id === weaponId);
+          if (next && !unlocked.has(next.id)) {
+            unlocked.add(next.id);
+            storyFlags.add("ch1-first-gun");
+            equip(next, next.name);
+          }
+        } else if (kind === "health") {
+          health = Math.min(MAX_HEALTH, health + 35);
         }
       }
+    }
+
+    if (health !== lastHudHealth || livingEnemies !== lastHudEnemies) {
+      lastHudHealth = health;
+      lastHudEnemies = livingEnemies;
+      emitLoadout();
     }
 
     // Doors between levels

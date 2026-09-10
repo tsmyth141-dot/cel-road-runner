@@ -9,6 +9,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     makeBuilder(gradient);
   const floorTiles: THREE.Mesh[] = [];
   const pickups: THREE.Object3D[] = [];
+  const enemies: LevelResult["enemies"] = [];
 
   /* ---------------- Ground + roads ---------------- */
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), toon(0x241f33));
@@ -175,6 +176,60 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   ];
   walkers.forEach(([x, z, c, r], i) => addPerson(x!, z!, c!, 0x241a3d, skinAt(i), r!, 0.95 + (i % 3) * 0.04));
 
+  /* ---------------- Chapter 1 encounters ---------------- */
+  // Your walk-up: an open, recessed entry room where the first weapon is recovered.
+  addBox(-4, 2.4, 31, 8, 4.8, 0.5, 0x171029, { collide: true, outline: 0.08 });
+  addBox(-7.75, 2.4, 29, 0.5, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
+  addBox(-0.25, 2.4, 29, 0.5, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
+  addBox(-4, 4.8, 29, 8, 0.45, 4, 0x241a3d, { outline: 0.07 });
+  addBox(-6.6, 2.1, 26.85, 2.2, 4.2, 0.3, 0x2b2046, { collide: true, outline: 0.07 });
+  addBox(-1.4, 2.1, 26.85, 2.2, 4.2, 0.3, 0x2b2046, { collide: true, outline: 0.07 });
+  addBox(-4, 4.8, 26.7, 5.8, 0.5, 0.5, 0xffd400, { outline: 0.04, emissive: true });
+  addBox(-4, 0.18, 26.1, 3, 0.35, 1.2, 0x4b3a67, { outline: 0.06 });
+  addBox(-6.3, 1.1, 30.2, 1.6, 2.2, 0.7, 0x6b3fd4, { collide: true, outline: 0.06 });
+  addBox(-1.7, 0.7, 30.1, 1.5, 1.4, 0.8, 0xd9772f, { collide: true, outline: 0.06 });
+
+  const gunPickup = new THREE.Group();
+  gunPickup.position.set(-4, 0.95, 29.4);
+  gunPickup.userData["pickupKind"] = "weapon";
+  gunPickup.userData["weaponId"] = "tagger";
+  gunPickup.userData["label"] = "Tagger .45";
+  addBox(0, 0, 0, 0.35, 0.28, 1.1, 0x5b4bd6, { parent: gunPickup, outline: 0.06 });
+  addBox(0, -0.32, 0.25, 0.28, 0.55, 0.3, 0xff2e7e, { parent: gunPickup, outline: 0.05 });
+  addBox(0, 0.18, -0.48, 0.24, 0.18, 0.22, 0xffd400, { parent: gunPickup, outline: 0.03, emissive: true });
+  root.add(gunPickup);
+  pickups.push(gunPickup);
+  spin.push(gunPickup);
+
+  // Health cans reward exploring the square and bus shelter.
+  for (const [x, z] of [[-15, -18], [-29, 25]] as [number, number][]) {
+    const can = new THREE.Group();
+    can.position.set(x, 0.8, z);
+    can.userData["pickupKind"] = "health";
+    can.userData["label"] = "Fizz Can";
+    addBox(0, 0, 0, 0.42, 0.85, 0.42, 0x27d17c, { parent: can, outline: 0.05, emissive: true });
+    addBox(0, 0.46, 0, 0.34, 0.08, 0.34, 0xf2f2f2, { parent: can, outline: 0.03 });
+    root.add(can);
+    pickups.push(can);
+    spin.push(can);
+  }
+
+  // Masked street toughs: deliberately few, readable, and cheap to animate.
+  const enemySpawns: [number, number, number][] = [
+    [4, 20, 0xff2e7e],
+    [-8, -12, 0xff7a1a],
+    [15, -22, 0x8b5cf6],
+    [-27, 18, 0x00e5ff],
+  ];
+  enemySpawns.forEach(([x, z, color], i) => {
+    const enemy = addPerson(x, z, color, 0x0f0b1c, skinAt(i + 1), Math.PI, 1.08);
+    enemy.userData["enemy"] = true;
+    enemy.traverse((part) => { part.userData["enemyRoot"] = enemy; });
+    addBox(0.17, 2.08, -0.27, 0.58, 0.18, 0.08, 0x0f0b1c, { parent: enemy, outline: 0.03 });
+    addBox(-0.52, 1.34, 0, 0.18, 0.9, 0.2, 0xffd400, { parent: enemy, outline: 0.04 });
+    enemies.push({ root: enemy, health: 60, speed: 1.65 + i * 0.08, damage: 10, attackCooldown: 0 });
+  });
+
 
   /* ---------------- Street clutter + signage ---------------- */
   // Overhead cable runs between lamp posts
@@ -301,6 +356,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     bounds: { x: BOUND, z: BOUND },
     floorTiles,
     pickups,
+    enemies,
     exits: [
       { x: CX + 2.2, z: 12, r: 2.4, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside" },
     ],

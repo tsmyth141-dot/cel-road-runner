@@ -177,14 +177,20 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   walkers.forEach(([x, z, c, r], i) => addPerson(x!, z!, c!, 0x241a3d, skinAt(i), r!, 0.95 + (i % 3) * 0.04));
 
   /* ---------------- Chapter 1 encounters ---------------- */
-  // Your walk-up: a recessed front step where the first weapon is recovered.
-  addBox(-4, 2.4, 29, 8, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
-  addBox(-4, 2.1, 26.85, 3.2, 4.2, 0.3, 0x2b2046, { outline: 0.07 });
+  // Your walk-up: an open, recessed entry room where the first weapon is recovered.
+  addBox(-4, 2.4, 31, 8, 4.8, 0.5, 0x171029, { collide: true, outline: 0.08 });
+  addBox(-7.75, 2.4, 29, 0.5, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
+  addBox(-0.25, 2.4, 29, 0.5, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
+  addBox(-4, 4.8, 29, 8, 0.45, 4, 0x241a3d, { outline: 0.07 });
+  addBox(-6.6, 2.1, 26.85, 2.2, 4.2, 0.3, 0x2b2046, { collide: true, outline: 0.07 });
+  addBox(-1.4, 2.1, 26.85, 2.2, 4.2, 0.3, 0x2b2046, { collide: true, outline: 0.07 });
   addBox(-4, 4.8, 26.7, 5.8, 0.5, 0.5, 0xffd400, { outline: 0.04, emissive: true });
-  addBox(-4, 0.28, 25.7, 5.5, 0.55, 2.2, 0x4b3a67, { collide: true, outline: 0.06 });
+  addBox(-4, 0.18, 26.1, 3, 0.35, 1.2, 0x4b3a67, { outline: 0.06 });
+  addBox(-6.3, 1.1, 30.2, 1.6, 2.2, 0.7, 0x6b3fd4, { collide: true, outline: 0.06 });
+  addBox(-1.7, 0.7, 30.1, 1.5, 1.4, 0.8, 0xd9772f, { collide: true, outline: 0.06 });
 
   const gunPickup = new THREE.Group();
-  gunPickup.position.set(-4, 1.15, 25.4);
+  gunPickup.position.set(-4, 0.95, 29.4);
   gunPickup.userData["pickupKind"] = "weapon";
   gunPickup.userData["weaponId"] = "tagger";
   gunPickup.userData["label"] = "Tagger .45";

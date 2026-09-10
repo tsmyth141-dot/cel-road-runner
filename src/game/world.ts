@@ -20,6 +20,14 @@ export type Animated = {
   bob: THREE.Object3D[];
 };
 
+export type Enemy = {
+  root: THREE.Group;
+  health: number;
+  speed: number;
+  damage: number;
+  attackCooldown: number;
+};
+
 export type LevelResult = {
   root: THREE.Group;
   colliders: Box[];
@@ -27,6 +35,7 @@ export type LevelResult = {
   bounds: { x: number; z: number };
   floorTiles: THREE.Mesh[];
   pickups: THREE.Object3D[];
+  enemies: Enemy[];
   exits: Exit[];
   background: number;
   fog: { color: number; near: number; far: number };

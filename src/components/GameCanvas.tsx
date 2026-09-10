@@ -19,6 +19,9 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
     weapon: start.weapon,
     zone: start.zone,
     title: start.zone === "city" ? "Canal Street" : "The Velvet Can",
+    health: 100,
+    maxHealth: 100,
+    enemies: 0,
   });
   const [toast, setToast] = useState<string | null>(null);
   const [cut, setCut] = useState<CutsceneState>({
@@ -91,6 +94,24 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
           <p className="font-display text-4xl uppercase leading-none text-foreground drop-shadow-[3px_3px_0_var(--outline)]">
             {loadout.title}
           </p>
+        </div>
+
+        <div className="absolute left-6 top-6 w-48 -rotate-1">
+          <div className="flex items-end justify-between font-display text-xs uppercase tracking-[0.25em] text-foreground">
+            <span>Health</span>
+            <span className="text-secondary">{loadout.health}</span>
+          </div>
+          <div className="mt-1 h-3 border-2 border-foreground/50 bg-background/70">
+            <div
+              className="h-full bg-primary transition-[width] duration-200"
+              style={{ width: `${(loadout.health / loadout.maxHealth) * 100}%` }}
+            />
+          </div>
+          {loadout.zone === "city" && (
+            <p className="mt-2 font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
+              Threats nearby · {loadout.enemies}
+            </p>
+          )}
         </div>
 
         {/* Weapon rack — greyed slots are still locked */}
@@ -199,6 +220,8 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
             <li>WASD — Move</li>
             <li>Shift — Sprint</li>
             <li>Mouse — Look</li>
+            <li>Click — Strike / Fire</li>
+            <li>E — Interact</li>
             <li>1-5 — Swap earned weapons</li>
             <li>Walk into the lit doorway to change area</li>
             <li>Esc — Pause · Autosaves every 10s</li>

@@ -187,7 +187,123 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     return g;
   }
 
-  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson };
+  /** Bespoke opening bartender: a compact, expressive low-poly character. */
+  function addBartender(x: number, z: number, rotY = 0, scale = 1) {
+    const g = new THREE.Group();
+    const skin = 0xa96745;
+    const skinLight = 0xcf8961;
+    const shirt = 0xeee6d8;
+    const vest = 0x191522;
+    const apron = 0x167f78;
+    const gold = 0xffc338;
+
+    const part = (
+      geometry: THREE.BufferGeometry,
+      color: number,
+      position: [number, number, number],
+      partScale: [number, number, number],
+      rotation: [number, number, number] = [0, 0, 0],
+      outline = 0.07,
+      parent: THREE.Object3D = g,
+    ) => {
+      const wrap = new THREE.Group();
+      const mesh = new THREE.Mesh(geometry, toon(color));
+      mesh.scale.set(...partScale);
+      wrap.add(mesh);
+      if (outline > 0) {
+        const ink = inkWeight(outline);
+        const contour = new THREE.Mesh(geometry, OUTLINE_MAT);
+        contour.scale.set(partScale[0] + ink, partScale[1] + ink, partScale[2] + ink);
+        wrap.add(contour);
+      }
+      wrap.position.set(...position);
+      wrap.rotation.set(...rotation);
+      parent.add(wrap);
+      return wrap;
+    };
+
+    const cube = boxGeo;
+    const headGeo = new THREE.DodecahedronGeometry(0.5, 0);
+    const roundGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 8);
+    const noseGeo = new THREE.ConeGeometry(0.5, 1, 5);
+    const shadow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.72, 16),
+      new THREE.MeshBasicMaterial({ color: 0x08040f, transparent: true, opacity: 0.48, depthWrite: false }),
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(0, 0.012, 0);
+    g.add(shadow);
+
+    // Heavy boots, cropped trousers, and an asymmetrical planted stance.
+    part(cube, 0x0d0c13, [-0.27, 0.13, -0.06], [0.32, 0.2, 0.5], [0, -0.08, 0]);
+    part(cube, 0x0d0c13, [0.28, 0.13, 0.04], [0.32, 0.2, 0.5], [0, 0.12, 0]);
+    part(cube, 0x262231, [-0.25, 0.63, 0], [0.34, 0.82, 0.36], [0, 0, -0.03]);
+    part(cube, 0x262231, [0.25, 0.65, 0], [0.34, 0.86, 0.36], [0, 0, 0.03]);
+
+    // Broad shirt and waistcoat create a recognisable, top-heavy silhouette.
+    part(cube, shirt, [0, 1.48, 0], [1.18, 1.02, 0.52], [0, 0, -0.025], 0.085);
+    part(cube, vest, [0, 1.5, -0.29], [0.9, 0.9, 0.12], [0, 0, -0.025], 0.045);
+    part(cube, apron, [0, 0.92, -0.31], [0.82, 0.82, 0.1], [0, 0, 0.02], 0.04);
+    part(cube, 0x0d4e4d, [0, 0.49, -0.3], [0.9, 0.08, 0.12], [0, 0, 0], 0.025);
+    part(cube, gold, [0, 1.67, -0.37], [0.13, 0.13, 0.05], [0, 0, Math.PI / 4], 0.02);
+    part(cube, 0xf34b7e, [0.28, 1.74, -0.37], [0.22, 0.11, 0.04], [0, 0, -0.08], 0.02);
+
+    // Rolled sleeves and posed arms: one hand on the booth, one on the hip.
+    const leftShoulder = new THREE.Group();
+    leftShoulder.position.set(-0.67, 1.72, 0);
+    leftShoulder.rotation.set(0.08, 0.05, -0.28);
+    g.add(leftShoulder);
+    part(roundGeo, shirt, [0, -0.22, 0], [0.34, 0.48, 0.34], [0, 0, 0], 0.06, leftShoulder);
+    part(roundGeo, skin, [-0.08, -0.65, -0.04], [0.25, 0.5, 0.25], [0.18, 0, -0.12], 0.055, leftShoulder);
+    part(cube, skinLight, [-0.15, -0.96, -0.12], [0.3, 0.22, 0.32], [0, 0.2, -0.08], 0.05, leftShoulder);
+
+    const rightShoulder = new THREE.Group();
+    rightShoulder.position.set(0.67, 1.72, 0);
+    rightShoulder.rotation.set(-0.08, 0, 0.55);
+    g.add(rightShoulder);
+    part(roundGeo, shirt, [0, -0.22, 0], [0.34, 0.48, 0.34], [0, 0, 0], 0.06, rightShoulder);
+    part(roundGeo, skin, [0.14, -0.58, -0.02], [0.25, 0.44, 0.25], [0, 0, 0.58], 0.055, rightShoulder);
+    part(cube, skinLight, [0.42, -0.72, -0.06], [0.3, 0.22, 0.32], [0, 0.1, 0.1], 0.05, rightShoulder);
+
+    // Angular head, swept hair, brows, nose, moustache, and a gold ear hoop.
+    const head = new THREE.Group();
+    head.position.set(-0.03, 2.34, -0.02);
+    head.rotation.set(-0.05, 0.08, -0.04);
+    g.add(head);
+    part(headGeo, skin, [0, 0, 0], [0.67, 0.72, 0.62], [0, 0, 0], 0.065, head);
+    part(cube, 0x16121c, [-0.08, 0.39, 0.03], [0.65, 0.22, 0.6], [0.04, 0, -0.12], 0.055, head);
+    part(cube, 0x16121c, [0.31, 0.26, 0.02], [0.25, 0.25, 0.57], [0, 0, 0.18], 0.045, head);
+    part(cube, 0xf5eee4, [-0.22, 0.08, -0.31], [0.18, 0.1, 0.04], [0, 0, -0.06], 0.018, head);
+    part(cube, 0xf5eee4, [0.2, 0.08, -0.31], [0.18, 0.1, 0.04], [0, 0, 0.08], 0.018, head);
+    part(cube, 0x111018, [-0.22, 0.08, -0.35], [0.065, 0.065, 0.025], [0, 0, 0], 0.012, head);
+    part(cube, 0x111018, [0.2, 0.08, -0.35], [0.065, 0.065, 0.025], [0, 0, 0], 0.012, head);
+    part(cube, 0x16121c, [-0.22, 0.2, -0.36], [0.24, 0.055, 0.035], [0, 0, -0.12], 0.016, head);
+    part(cube, 0x16121c, [0.2, 0.2, -0.36], [0.24, 0.055, 0.035], [0, 0, 0.05], 0.016, head);
+    part(noseGeo, skinLight, [0, -0.03, -0.4], [0.14, 0.22, 0.14], [Math.PI / 2, 0, 0], 0.025, head);
+    part(cube, 0x35202a, [0, -0.23, -0.36], [0.42, 0.1, 0.07], [0, 0, -0.03], 0.022, head);
+    part(cube, 0xf2d6c2, [0, -0.32, -0.36], [0.2, 0.045, 0.04], [0, 0, 0], 0.012, head);
+    part(roundGeo, gold, [0.41, -0.02, -0.02], [0.1, 0.03, 0.1], [0, 0, Math.PI / 2], 0.018, head);
+    part(cube, shirt, [-0.36, 0.02, -0.37], [0.045, 0.23, 0.025], [0, 0, -0.3], 0.01, head);
+
+    // Bar towel and apron tie add readable occupational detail from a distance.
+    part(cube, 0xe64d79, [-0.53, 1.34, -0.37], [0.18, 0.82, 0.08], [0, 0, -0.12], 0.035);
+    part(cube, gold, [-0.43, 1.06, -0.42], [0.2, 0.07, 0.05], [0, 0, -0.12], 0.018);
+
+    g.position.set(x, 0, z);
+    g.rotation.y = rotY;
+    g.scale.setScalar(scale);
+    g.userData['phase'] = 0.7;
+    g.userData['idleStyle'] = 'bartender';
+    g.userData['idleHead'] = head;
+    g.userData['idleArm'] = leftShoulder;
+    g.userData['idleHeadBaseY'] = head.rotation.y;
+    g.userData['idleArmBaseZ'] = leftShoulder.rotation.z;
+    bob.push(g);
+    root.add(g);
+    return g;
+  }
+
+  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson, addBartender };
 }
 
 /* ---------------- First-person viewmodel ---------------- */

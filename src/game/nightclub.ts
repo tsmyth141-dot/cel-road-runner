@@ -8,7 +8,7 @@ const ROOM_Z = 16; // half-depth
 const WALL_H = 9;
 
 export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
-  const { root, colliders, spin, flicker, bob, toon, glow, addBox, addPerson } =
+  const { root, colliders, spin, flicker, bob, toon, glow, addBox, addBartender } =
     makeBuilder(gradient);
   const floorTiles: THREE.Mesh[] = [];
   const pickups: THREE.Object3D[] = [];
@@ -173,8 +173,8 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   addBox(-13.6, 1.12, 3.4, 0.22, 0.24, 0.22, 0xffd400, { outline: 0.02, emissive: true });
   addBox(-13.2, 1.05, 4.6, 0.5, 0.1, 0.3, 0xff2e7e, { outline: 0.02 });
 
-  // The bartender, standing over you at the booth
-  addPerson(-10.6, 5.6, 0xf2f2f2, 0x0f0b1c, 0xd79a72, -1.5, 1.02);
+  // The bartender, leaning over the booth in the opening scene.
+  addBartender(-10.6, 5.6, -1.5, 1.04);
 
   /* ---------------- Velvet rope + VIP corner (deserted) ---------------- */
   addBox(-16, 0.9, -12, 12, 1.8, 4, 0x2b2046, { collide: true, outline: 0.06 });

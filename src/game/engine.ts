@@ -433,8 +433,23 @@ export function createEngine(
     for (const p of level.animated.bob) {
       const ph = (p.userData['phase'] as number) ?? 0;
       const t = now * 0.0028 + ph;
-      p.position.y = Math.abs(Math.sin(t)) * 0.03;
-      p.rotation.z = Math.sin(t) * 0.035;
+      if (p.userData['idleStyle'] === 'bartender') {
+        p.position.y = Math.sin(t * 0.48) * 0.008;
+        p.rotation.z = Math.sin(t * 0.55) * 0.012;
+        const head = p.userData['idleHead'];
+        const arm = p.userData['idleArm'];
+        if (head instanceof THREE.Object3D) {
+          const baseY = (p.userData['idleHeadBaseY'] as number) ?? 0;
+          head.rotation.y = baseY + Math.sin(t * 0.42) * 0.045;
+        }
+        if (arm instanceof THREE.Object3D) {
+          const baseZ = (p.userData['idleArmBaseZ'] as number) ?? 0;
+          arm.rotation.z = baseZ + Math.sin(t * 0.62) * 0.018;
+        }
+      } else {
+        p.position.y = Math.abs(Math.sin(t)) * 0.03;
+        p.rotation.z = Math.sin(t) * 0.035;
+      }
     }
 
     // Lightweight chapter enemies: patrol until nearby, then close in and strike.

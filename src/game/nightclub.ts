@@ -180,7 +180,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   }
   // A couple of glasses and a knocked-over tray on the table where you wake.
   const glassMat = new THREE.MeshToonMaterial({ color: 0xa6b3ae, transparent: true, opacity: 0.7, gradientMap: gradient });
-  for (const [gx, gz] of [[-13.9, 3.55], [-13.3, 4.45]]) {
+  for (const [gx, gz] of [[-13.9, 3.55], [-13.3, 4.45]] as [number, number][]) {
     const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.085, 0.2, 8, 1, true), glassMat);
     glass.position.set(gx, 1.03, gz);
     root.add(glass);

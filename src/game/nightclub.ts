@@ -174,7 +174,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   addBox(-13.2, 1.05, 4.6, 0.5, 0.1, 0.3, 0xff2e7e, { outline: 0.02 });
 
   // The bartender, leaning over the booth in the opening scene.
-  addBartender(-10.6, 5.6, -1.5, 1.04);
+  addBartender(-10.6, 5.6, 1.5, 1.04);
 
   /* ---------------- Velvet rope + VIP corner (deserted) ---------------- */
   addBox(-16, 0.9, -12, 12, 1.8, 4, 0x2b2046, { collide: true, outline: 0.06 });

@@ -223,9 +223,8 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     };
 
     const cube = boxGeo;
-    const headGeo = new THREE.DodecahedronGeometry(0.5, 0);
+    const headGeo = new THREE.SphereGeometry(0.5, 10, 8);
     const roundGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 8);
-    const noseGeo = new THREE.ConeGeometry(0.5, 1, 5);
     const shadow = new THREE.Mesh(
       new THREE.CircleGeometry(0.72, 16),
       new THREE.MeshBasicMaterial({ color: 0x08040f, transparent: true, opacity: 0.48, depthWrite: false }),
@@ -265,25 +264,25 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     part(roundGeo, skin, [0.14, -0.58, -0.02], [0.25, 0.44, 0.25], [0, 0, 0.58], 0.055, rightShoulder);
     part(cube, skinLight, [0.42, -0.72, -0.06], [0.3, 0.22, 0.32], [0, 0.1, 0.1], 0.05, rightShoulder);
 
-    // Angular head, swept hair, brows, nose, moustache, and a gold ear hoop.
+    // A clean, human face: rounded skull, tapered jaw and a restrained expression.
     const head = new THREE.Group();
-    head.position.set(-0.03, 2.34, -0.02);
-    head.rotation.set(-0.05, 0.08, -0.04);
+    head.position.set(-0.03, 2.25, -0.02);
+    head.rotation.set(-0.05, 0.02, -0.02);
     g.add(head);
-    part(headGeo, skin, [0, 0, 0], [0.67, 0.72, 0.62], [0, 0, 0], 0.065, head);
-    part(cube, 0x16121c, [-0.08, 0.39, 0.03], [0.65, 0.22, 0.6], [0.04, 0, -0.12], 0.055, head);
-    part(cube, 0x16121c, [0.31, 0.26, 0.02], [0.25, 0.25, 0.57], [0, 0, 0.18], 0.045, head);
-    part(cube, 0xf5eee4, [-0.22, 0.08, -0.31], [0.18, 0.1, 0.04], [0, 0, -0.06], 0.018, head);
-    part(cube, 0xf5eee4, [0.2, 0.08, -0.31], [0.18, 0.1, 0.04], [0, 0, 0.08], 0.018, head);
-    part(cube, 0x111018, [-0.22, 0.08, -0.35], [0.065, 0.065, 0.025], [0, 0, 0], 0.012, head);
-    part(cube, 0x111018, [0.2, 0.08, -0.35], [0.065, 0.065, 0.025], [0, 0, 0], 0.012, head);
-    part(cube, 0x16121c, [-0.22, 0.2, -0.36], [0.24, 0.055, 0.035], [0, 0, -0.12], 0.016, head);
-    part(cube, 0x16121c, [0.2, 0.2, -0.36], [0.24, 0.055, 0.035], [0, 0, 0.05], 0.016, head);
-    part(noseGeo, skinLight, [0, -0.03, -0.4], [0.14, 0.22, 0.14], [Math.PI / 2, 0, 0], 0.025, head);
-    part(cube, 0x35202a, [0, -0.23, -0.36], [0.42, 0.1, 0.07], [0, 0, -0.03], 0.022, head);
-    part(cube, 0xf2d6c2, [0, -0.32, -0.36], [0.2, 0.045, 0.04], [0, 0, 0], 0.012, head);
-    part(roundGeo, gold, [0.41, -0.02, -0.02], [0.1, 0.03, 0.1], [0, 0, Math.PI / 2], 0.018, head);
-    part(cube, shirt, [-0.36, 0.02, -0.37], [0.045, 0.23, 0.025], [0, 0, -0.3], 0.01, head);
+    part(headGeo, skin, [0, 0, 0], [0.7, 0.84, 0.68], [0, 0, 0], 0.035, head);
+    part(headGeo, skin, [0, -0.22, -0.065], [0.58, 0.39, 0.56], [0, 0, 0], 0, head);
+    // Hair hugs the crown instead of stacking disconnected slabs over the face.
+    part(headGeo, 0x18141b, [0, 0.32, 0.04], [0.73, 0.27, 0.7], [0, 0, -0.08], 0.025, head);
+    part(headGeo, 0x18141b, [0.27, 0.17, 0.12], [0.22, 0.34, 0.55], [0, 0, 0.15], 0, head);
+    for (const eyeX of [-0.17, 0.17]) {
+      part(headGeo, 0xe7d4bb, [eyeX, 0.055, -0.314], [0.095, 0.055, 0.025], [0, 0, 0], 0, head);
+      part(headGeo, 0x201720, [eyeX, 0.055, -0.336], [0.035, 0.04, 0.018], [0, 0, 0], 0, head);
+      part(cube, 0x251922, [eyeX, 0.18, -0.315], [0.21, 0.035, 0.035], [0, 0, eyeX * 0.2], 0, head);
+    }
+    part(headGeo, skinLight, [0, -0.095, -0.32], [0.105, 0.13, 0.095], [0, 0, 0], 0, head);
+    part(cube, 0x43282b, [0, -0.29, -0.285], [0.22, 0.025, 0.035], [0, 0, -0.02], 0, head);
+    part(headGeo, skinLight, [0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
+    part(headGeo, skinLight, [-0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
 
     // Bar towel and apron tie add readable occupational detail from a distance.
     part(cube, 0xe64d79, [-0.53, 1.34, -0.37], [0.18, 0.82, 0.08], [0, 0, -0.12], 0.035);

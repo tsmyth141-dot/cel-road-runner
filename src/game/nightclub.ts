@@ -38,19 +38,13 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     addBox(x, 0.18, z, w, 0.16, d, 0xff2e7e, { outline: 0, emissive: true });
   }
 
-  // Graffiti panels sprayed across the walls
+  // Keep a couple of murals at the far end rather than filling every wall with glowing rectangles.
   const tags: [number, number, number, number, number][] = [
-    [-14, 4.6, -ROOM_Z + 0.6, 0xff2e7e, 0],
     [-2, 5.2, -ROOM_Z + 0.6, 0x27d17c, 0],
-    [12, 4.4, -ROOM_Z + 0.6, 0xffd400, 0],
-    [-ROOM_X + 0.6, 5, -6, 0x00e5ff, Math.PI / 2],
-    [-ROOM_X + 0.6, 4.2, 6, 0xff7a1a, Math.PI / 2],
-    [ROOM_X - 0.6, 4.8, 2, 0x8b5cf6, -Math.PI / 2],
   ];
   for (const [x, y, z, c, r] of tags) {
     addBox(x, y, z, 6.5, 3.4, 0.2, 0x171029, { rotY: r, outline: 0.06 });
-    addBox(x, y, z, 5.4, 2.4, 0.3, c, { rotY: r, outline: 0, emissive: true });
-    addBox(x, y - 1.5, z, 5.4, 0.18, 0.32, 0xffffff, { rotY: r, outline: 0, emissive: true });
+    addBox(x, y, z, 5.4, 2.4, 0.3, c, { rotY: r, outline: 0 });
   }
 
   /* ---------------- Wall dressing / architecture ---------------- */
@@ -59,21 +53,16 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   // Ribbed pilasters down the long walls with backlit slots between them
   for (let i = -4; i <= 4; i++) {
     const px = i * 4.6;
-    for (const wz of [-ROOM_Z + 0.9, ROOM_Z - 0.9]) {
+    for (const wz of [-ROOM_Z + 0.9]) {
       addBox(px, WALL_H / 2, wz, 0.9, WALL_H, 0.7, 0x241a3d, { outline: 0.05 });
       addBox(px, WALL_H / 2 + 0.4, wz - Math.sign(wz) * 0.42, 0.3, WALL_H - 2.4, 0.12,
         i % 2 === 0 ? 0x8b5cf6 : 0x00e5ff, { outline: 0, emissive: true });
     }
   }
-  // Arched alcoves with backlight along the side walls
-  for (const [ax, ar] of [[-ROOM_X + 1.1, Math.PI / 2], [ROOM_X - 1.1, -Math.PI / 2]] as const) {
-    for (const az of [-10, -2, 8, 13]) {
-      addBox(ax, 3.2, az, 3.6, 6, 0.5, 0x120c22, { rotY: ar, outline: 0.06 });
-      addBox(ax + Math.sign(ax) * -0.2, 3.2, az, 2.6, 5, 0.3, 0x3b1d5e, { rotY: ar, outline: 0 });
-      addBox(ax + Math.sign(ax) * -0.3, 6, az, 2.8, 0.18, 0.3, 0xff2e7e, {
-        rotY: ar, outline: 0, emissive: true,
-      });
-    }
+  // Quiet wall panelling behind the booths; let the furniture and the bartender carry the scene.
+  for (const az of [-11, -4, 4, 11]) {
+    addBox(-21.32, 2.7, az, 0.12, 3.6, 5.8, 0x2b2939, { outline: 0 });
+    addBox(-21.22, 1.08, az, 0.13, 0.13, 5.8, 0x70534c, { outline: 0 });
   }
   // Hanging banners high on the back wall
   for (let i = 0; i < 5; i++) {
@@ -146,32 +135,54 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   }
 
   /* ---------------- Bar ---------------- */
-  addBox(15, 0.65, 6, 10, 1.3, 2, 0x3a2a63, { collide: true, outline: 0.07 });
-  addBox(15, 1.36, 6, 10.4, 0.16, 2.4, 0xffd400, { outline: 0.03 });
-  addBox(19.5, 3, 6, 2, 6, 8, 0x171029, { collide: true });
-  for (let i = 0; i < 4; i++) {
-    addBox(18.6, 1.6 + i * 1.3, 6, 0.3, 0.12, 7, 0x00e5ff, { outline: 0, emissive: true });
+  // A continuous dark timber counter, foot rail, mirror and two rows of bottles.
+  addBox(15, 0.67, 6, 10, 1.34, 1.8, 0x292128, { collide: true, outline: 0.035 });
+  addBox(15, 1.38, 6, 10.4, 0.14, 2.12, 0x77513c, { outline: 0.025 });
+  addBox(15, 0.18, 4.92, 9.4, 0.07, 0.08, 0x9b8565, { outline: 0 });
+  addBox(20.15, 3.05, 6, 0.12, 3.8, 8.2, 0x242d33, { outline: 0.03 });
+  for (const height of [2.15, 3.45]) {
+    addBox(19.58, height, 6, 0.65, 0.12, 7.3, 0x694b3e, { outline: 0.02 });
   }
-  // Bottles on the back shelf
-  for (let i = 0; i < 14; i++) {
-    addBox(18.5, 1.95 + (i % 3) * 1.3, 3 + (i % 7) * 0.9, 0.22, 0.6, 0.22,
-      tileColors[i % tileColors.length]!, { outline: 0.02, emissive: true });
+  const bottleGeo = new THREE.CylinderGeometry(0.12, 0.14, 0.5, 7);
+  const neckGeo = new THREE.CylinderGeometry(0.055, 0.07, 0.2, 7);
+  for (let row = 0; row < 2; row++) {
+    for (let i = 0; i < 9; i++) {
+      const bottle = new THREE.Group();
+      const bottleColor = [0x346b59, 0x5c3b35, 0x806b37, 0x3c5365][(i + row) % 4]!;
+      bottle.add(new THREE.Mesh(bottleGeo, toon(bottleColor)));
+      const neck = new THREE.Mesh(neckGeo, toon(bottleColor));
+      neck.position.y = 0.32;
+      bottle.add(neck);
+      const label = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.17, 0.18), toon(0xc9bba0));
+      label.position.set(-0.115, -0.035, 0);
+      bottle.add(label);
+      bottle.position.set(19.45, row === 0 ? 2.5 : 3.8, 2.8 + i * 0.78);
+      root.add(bottle);
+    }
   }
-  // Bar stools, all empty
+  // Empty stools with seats, a narrow stem and a circular base.
   for (let i = -2; i <= 2; i++) {
-    addBox(12.4, 0.55, 6 + i * 2, 0.8, 1.1, 0.8, 0xff7a1a, { collide: true });
+    const z = 6 + i * 1.85;
+    addBox(12.4, 0.93, z, 0.85, 0.14, 0.85, 0x62473d, { outline: 0.03 });
+    addBox(12.4, 0.5, z, 0.12, 0.8, 0.12, 0x6c6b67, { outline: 0 });
+    addBox(12.4, 0.08, z, 0.65, 0.1, 0.65, 0x313237, { outline: 0 });
   }
 
   /* ---------------- Booths / seating (empty) ---------------- */
   for (const bz of [-4, 4, 11]) {
-    addBox(-17, 0.5, bz, 6, 1, 3, 0x6b3fd4, { collide: true });
-    addBox(-19.4, 1.6, bz, 1, 2.2, 3, 0x4b2f9e, { collide: true, outline: 0.05 });
-    addBox(-13.6, 0.9, bz, 2.2, 0.2, 2.2, 0x241a3d, {});
-    addBox(-13.6, 1.15, bz, 0.3, 0.3, 0.3, 0x00e5ff, { outline: 0.02, emissive: true });
+    addBox(-17, 0.5, bz, 6, 1, 3, 0x4c3b45, { collide: true, outline: 0.025 });
+    addBox(-19.4, 1.45, bz, 0.55, 1.85, 3, 0x40323c, { collide: true, outline: 0.025 });
+    addBox(-13.6, 0.86, bz, 2, 0.12, 2, 0x795441, { outline: 0.02 });
+    addBox(-13.6, 0.42, bz, 0.14, 0.78, 0.14, 0x3c3437, { outline: 0 });
   }
-  // Your booth: knocked-over glasses and a spilled tray
-  addBox(-13.6, 1.12, 3.4, 0.22, 0.24, 0.22, 0xffd400, { outline: 0.02, emissive: true });
-  addBox(-13.2, 1.05, 4.6, 0.5, 0.1, 0.3, 0xff2e7e, { outline: 0.02 });
+  // A couple of glasses and a knocked-over tray on the table where you wake.
+  const glassMat = new THREE.MeshToonMaterial({ color: 0xa6b3ae, transparent: true, opacity: 0.7, gradientMap: gradient });
+  for (const [gx, gz] of [[-13.9, 3.55], [-13.3, 4.45]] as [number, number][]) {
+    const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.085, 0.2, 8, 1, true), glassMat);
+    glass.position.set(gx, 1.03, gz);
+    root.add(glass);
+  }
+  addBox(-13.1, 0.96, 4.3, 0.38, 0.025, 0.25, 0x44454b, { rotY: 0.2, outline: 0 });
 
   // The bartender, leaning over the booth in the opening scene.
   addBartender(-10.6, 5.6, 1.5, 1.04);
@@ -219,15 +230,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
 
 
   /* ---------------- Extra dressing: clutter, signage, rigging ---------------- */
-  // Bottle shelving behind the bar
-  for (let s = 0; s < 3; s++) {
-    addBox(-20.4, 2.2 + s * 1.3, -12, 1.2, 0.16, 10, 0x160f2b, { outline: 0.05 });
-    for (let i = 0; i < 12; i++) {
-      const bz = -16.4 + i * 0.85;
-      const c = [0x27d17c, 0xffd400, 0xff2e7e, 0x00e5ff][(i + s) % 4]!;
-      addBox(-20.4, 2.55 + s * 1.3, bz, 0.26, 0.7, 0.26, c, { outline: 0.03, emissive: i % 3 === 0 });
-    }
-  }
+  // The bottles belong behind the counter, not along the seating wall.
   // Hanging pendant lamps over the booths
   for (const pz of [-6, -1, 4, 9]) {
     addBox(-17.6, 6.6, pz, 0.08, 3.6, 0.08, 0x0f0b1c, { outline: 0.02 });
@@ -241,9 +244,8 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   for (const cz of [-10, -3, 5, 12]) {
     addBox(0, 8.2, cz, ROOM_X * 2 - 4, 0.12, 0.12, 0x0f0b1c, { outline: 0.02 });
   }
-  // Stacked crates + kegs in the corners
+  // Stacked crates + kegs in the far service corner
   const clutter: [number, number, number, number][] = [
-    [-19.5, 14, 0xd9772f, 1.4], [-17.6, 14.2, 0x4b2f9e, 1.1], [-18.4, 12.4, 0x2b2046, 1.25],
     [19.4, -13.6, 0x27d17c, 1.3], [19.6, -11.4, 0xffd400, 1.05], [17.8, -13.8, 0x1f6feb, 1.2],
   ];
   for (const [x, z, c, sz] of clutter) {
@@ -270,7 +272,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   }
   // Litter: cups, cans and a dropped tray on the floor
   const litter: [number, number, number][] = [
-    [-11.4, 6.2, 0xffd400], [-9.8, 8.4, 0x27d17c], [3.2, 12.6, 0xff2e7e],
+    [3.2, 12.6, 0xff2e7e],
     [7.6, -4.2, 0x00e5ff], [-4.4, -9.2, 0xff7a1a], [12.2, 9.4, 0x8b5cf6],
     [-15.2, 2.4, 0xf2f2f2], [1.4, 5.8, 0xffd400],
   ];

@@ -38,7 +38,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     addBox(x, 0.18, z, w, 0.16, d, 0xff2e7e, { outline: 0, emissive: true });
   }
 
-  // Graffiti panels sprayed across the walls
+  // Graffiti panels remain on the far wall, away from the quieter wake-up booth.
   const tags: [number, number, number, number, number][] = [
     [-14, 4.6, -ROOM_Z + 0.6, 0xff2e7e, 0],
     [-2, 5.2, -ROOM_Z + 0.6, 0x27d17c, 0],
@@ -56,7 +56,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   // Ribbed pilasters down the long walls with backlit slots between them
   for (let i = -4; i <= 4; i++) {
     const px = i * 4.6;
-    for (const wz of [-ROOM_Z + 0.9, ROOM_Z - 0.9]) {
+    for (const wz of [-ROOM_Z + 0.9]) {
       addBox(px, WALL_H / 2, wz, 0.9, WALL_H, 0.7, 0x241a3d, { outline: 0.05 });
       addBox(px, WALL_H / 2 + 0.4, wz - Math.sign(wz) * 0.42, 0.3, WALL_H - 2.4, 0.12,
         i % 2 === 0 ? 0x8b5cf6 : 0x00e5ff, { outline: 0, emissive: true });

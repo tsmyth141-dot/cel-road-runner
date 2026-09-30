@@ -275,11 +275,11 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     part(headGeo, 0x18141b, [0, 0.32, 0.04], [0.73, 0.27, 0.7], [0, 0, -0.08], 0.025, head);
     part(headGeo, 0x18141b, [0.27, 0.17, 0.12], [0.22, 0.34, 0.55], [0, 0, 0.15], 0, head);
     for (const eyeX of [-0.17, 0.17]) {
-      part(headGeo, 0xf2e4d1, [eyeX, 0.055, -0.314], [0.14, 0.095, 0.055], [0, 0, 0], 0, head);
-      part(headGeo, 0x201720, [eyeX, 0.055, -0.365], [0.052, 0.067, 0.026], [0, 0, 0], 0, head);
+      part(headGeo, 0xe7d4bb, [eyeX, 0.055, -0.314], [0.095, 0.055, 0.025], [0, 0, 0], 0, head);
+      part(headGeo, 0x201720, [eyeX, 0.055, -0.336], [0.035, 0.04, 0.018], [0, 0, 0], 0, head);
       part(cube, 0x251922, [eyeX, 0.18, -0.315], [0.21, 0.035, 0.035], [0, 0, eyeX * 0.2], 0, head);
     }
-    part(headGeo, skinLight, [0, -0.09, -0.34], [0.13, 0.24, 0.17], [0, 0, 0], 0, head);
+    part(headGeo, skinLight, [0, -0.095, -0.32], [0.105, 0.13, 0.095], [0, 0, 0], 0, head);
     part(cube, 0x43282b, [0, -0.29, -0.285], [0.22, 0.025, 0.035], [0, 0, -0.02], 0, head);
     part(headGeo, skinLight, [0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
     part(headGeo, skinLight, [-0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);

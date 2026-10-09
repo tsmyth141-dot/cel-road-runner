@@ -247,22 +247,32 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     part(cube, gold, [0, 1.67, -0.37], [0.13, 0.13, 0.05], [0, 0, Math.PI / 4], 0.02);
     part(cube, 0xf34b7e, [0.28, 1.74, -0.37], [0.22, 0.11, 0.04], [0, 0, -0.08], 0.02);
 
-    // Rolled sleeves and posed arms: one hand on the booth, one on the hip.
+    // Connected shoulder / elbow pivots keep the arms relaxed and anatomically readable.
     const leftShoulder = new THREE.Group();
-    leftShoulder.position.set(-0.67, 1.72, 0);
-    leftShoulder.rotation.set(0.08, 0.05, -0.28);
+    leftShoulder.position.set(-0.59, 1.79, 0);
+    leftShoulder.rotation.set(-0.12, 0, -0.16);
     g.add(leftShoulder);
-    part(roundGeo, shirt, [0, -0.22, 0], [0.34, 0.48, 0.34], [0, 0, 0], 0.06, leftShoulder);
-    part(roundGeo, skin, [-0.08, -0.65, -0.04], [0.25, 0.5, 0.25], [0.18, 0, -0.12], 0.055, leftShoulder);
-    part(cube, skinLight, [-0.15, -0.96, -0.12], [0.3, 0.22, 0.32], [0, 0.2, -0.08], 0.05, leftShoulder);
+    const armGeo = new THREE.CylinderGeometry(0.5, 0.42, 1, 8);
+    const handGeo = new THREE.SphereGeometry(0.5, 8, 6);
+    const addArm = (shoulder: THREE.Group, bend: number) => {
+      part(armGeo, shirt, [0, -0.21, 0], [0.31, 0.46, 0.31], [0, 0, 0], 0.02, shoulder);
+      part(roundGeo, shirt, [0, -0.4, 0], [0.33, 0.075, 0.33], [0, 0, 0], 0.012, shoulder);
+      const elbow = new THREE.Group();
+      elbow.position.set(0, -0.44, 0);
+      elbow.rotation.x = bend;
+      shoulder.add(elbow);
+      part(handGeo, skin, [0, 0, 0], [0.24, 0.24, 0.24], [0, 0, 0], 0, elbow);
+      part(armGeo, skin, [0, -0.21, 0], [0.23, 0.44, 0.23], [0, 0, 0], 0.016, elbow);
+      part(handGeo, skinLight, [0, -0.51, -0.025], [0.22, 0.27, 0.16], [0, 0, 0], 0.012, elbow);
+      part(handGeo, skin, [0.1, -0.47, -0.035], [0.095, 0.16, 0.1], [0, 0, -0.25], 0, elbow);
+    };
+    addArm(leftShoulder, 0.35);
 
     const rightShoulder = new THREE.Group();
-    rightShoulder.position.set(0.67, 1.72, 0);
-    rightShoulder.rotation.set(-0.08, 0, 0.55);
+    rightShoulder.position.set(0.59, 1.79, 0);
+    rightShoulder.rotation.set(0, 0, 0.12);
     g.add(rightShoulder);
-    part(roundGeo, shirt, [0, -0.22, 0], [0.34, 0.48, 0.34], [0, 0, 0], 0.06, rightShoulder);
-    part(roundGeo, skin, [0.14, -0.58, -0.02], [0.25, 0.44, 0.25], [0, 0, 0.58], 0.055, rightShoulder);
-    part(cube, skinLight, [0.42, -0.72, -0.06], [0.3, 0.22, 0.32], [0, 0.1, 0.1], 0.05, rightShoulder);
+    addArm(rightShoulder, 0.12);
 
     // A clean, human face: rounded skull, tapered jaw and a restrained expression.
     const head = new THREE.Group();

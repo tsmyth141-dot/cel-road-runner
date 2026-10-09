@@ -1,17 +1,18 @@
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import { deepStrictEqual, strictEqual } from "node:assert";
 import { chapterObjectives } from "./objectives";
 
 describe("chapter one objectives", () => {
   test("waking in the club starts with unfinished objectives", () => {
-    expect(chapterObjectives("club", [], false).map((o) => o.complete)).toEqual([false, false, false]);
+    deepStrictEqual(chapterObjectives("club", [], false).map((o) => o.complete), [false, false, false]);
   });
   test("checking the booth completes only its objective", () => {
-    expect(chapterObjectives("club", ["ch1-booth-aftershock"], false).map((o) => o.complete)).toEqual([true, false, false]);
+    deepStrictEqual(chapterObjectives("club", ["ch1-booth-aftershock"], false).map((o) => o.complete), [true, false, false]);
   });
   test("leaving the club stays complete after returning", () => {
-    expect(chapterObjectives("club", ["ch1-left-club"], false)[1]?.complete).toBe(true);
+    strictEqual(chapterObjectives("club", ["ch1-left-club"], false)[1]?.complete, true);
   });
   test("the house weapon completes the home objective", () => {
-    expect(chapterObjectives("city", [], true).map((o) => o.complete)).toEqual([false, true, true]);
+    deepStrictEqual(chapterObjectives("city", [], true).map((o) => o.complete), [false, true, true]);
   });
 });

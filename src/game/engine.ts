@@ -22,6 +22,7 @@ export type EngineHandle = {
 
 export type CutsceneState = {
   active: boolean;
+  waking?: boolean;
   /** 0..1 progress through the scene. */
   progress: number;
   line: CutsceneLine | null;
@@ -132,7 +133,7 @@ export function createEngine(
   let cutLine: CutsceneLine | null = null;
   let cutsceneEnded = !cutscene;
   viewRig.visible = !cutscene;
-  if (cutscene) onCutscene({ active: true, progress: 0, line: null });
+  if (cutscene) onCutscene({ active: true, waking: true, progress: 0, line: null });
 
   function endCutscene() {
     if (cutsceneEnded) return;
@@ -360,15 +361,21 @@ export function createEngine(
       }
       const k = sampleCutscene(script, cutTime);
       player.set(k.pos[0], k.pos[1], k.pos[2]);
-      const drift = Math.sin(cutTime * 0.9) * 0.012;
+      const waking = script === CLUB_INTRO;
+      const unease = waking && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? Math.pow(Math.max(0, 1 - cutTime / 13), 2)
+        : 0;
+      const drift = Math.sin(cutTime * 0.9) * (0.012 + unease * 0.035);
       camera.position.set(k.pos[0], k.pos[1] + drift, k.pos[2]);
-      camera.rotation.set(k.pitch + drift * 0.4, k.yaw, Math.sin(cutTime * 0.6) * 0.02, "YXZ");
+      camera.rotation.set(k.pitch + drift * 0.4, k.yaw + Math.sin(cutTime * 0.7) * unease * 0.025,
+        Math.sin(cutTime * 0.6) * (0.008 + unease * 0.045), "YXZ");
       yaw = k.yaw;
       const nextLine = lineAt(script, cutTime);
       if (nextLine !== cutLine) {
         cutLine = nextLine;
         onCutscene({
           active: true,
+          waking,
           progress: Math.min(cutTime / script.duration, 1),
           line: cutLine,
         });
@@ -536,15 +543,15 @@ export function createEngine(
       emitLoadout();
     }
 
-    // Beat-synced dance floor (128 BPM)
+    // Closing-time floor: low, slow pools of colour rather than party strobes.
     if (level.floorTiles.length) {
-      const beat = (now * 0.002133) % 1;
+      const beat = (now * 0.00012) % 1;
       for (let i = 0; i < level.floorTiles.length; i++) {
         const t = level.floorTiles[i]!;
         const m = t.material as THREE.MeshBasicMaterial;
         const k =
           0.35 + 0.65 * Math.abs(Math.sin(beat * Math.PI + (t.userData['phase'] as number)));
-        m.color.setHSL((i * 0.07 + now * 0.00008) % 1, 0.85, 0.25 + k * 0.35);
+        m.color.setHSL((i * 0.07) % 1, 0.45, 0.055 + k * 0.075);
       }
     }
 

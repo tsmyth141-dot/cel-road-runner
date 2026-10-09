@@ -222,7 +222,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     const c = rigColors[i % rigColors.length]!;
     addBox(x!, y! - 0.4, z!, 0.9, 0.7, 0.9, 0x0f0b1c, { outline: 0.04 });
     addBox(x!, y! - 0.85, z!, 0.7, 0.2, 0.7, c, { outline: 0, emissive: true });
-    const l = new THREE.PointLight(c, 60, 30, 2);
+    const l = new THREE.PointLight(c, 18, 24, 2);
     l.position.set(x!, y! - 1.2, z!);
     root.add(l);
     flicker.push(l);
@@ -298,11 +298,11 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   addBox(-16.5, 1.4, 11.4, 8, 2.8, 0.4, 0x1b1430, { collide: true, outline: 0.05 });
 
   /* ---------------- Ambience ---------------- */
-  root.add(new THREE.HemisphereLight(0x9c7bff, 0x2e2350, 1.5));
-  const key = new THREE.DirectionalLight(0xd0b0ff, 1.35);
+  root.add(new THREE.HemisphereLight(0x8493a0, 0x24212b, 0.85));
+  const key = new THREE.DirectionalLight(0xc4bbc0, 0.85);
   key.position.set(-8, 14, 10);
   root.add(key);
-  const haze = new THREE.PointLight(0xff5fa8, 30, 34, 2);
+  const haze = new THREE.PointLight(0xff5fa8, 10, 26, 2);
   haze.position.set(0, 4, -8);
   root.add(haze);
   flicker.push(haze);
@@ -321,7 +321,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
       { x: doorX + 1.6, z: 14, r: 2.2, to: "city", spawn: [-13, 6], yaw: -Math.PI / 2, label: "Step outside" },
     ],
     background: 0x120c22,
-    fog: { color: 0x1a0f2e, near: 18, far: 62 },
+    fog: { color: 0x120c22, near: 12, far: 48 },
     title: "The Velvet Can",
   };
 }

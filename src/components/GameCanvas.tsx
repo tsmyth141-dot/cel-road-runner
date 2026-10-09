@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { createEngine, type CutsceneState, type EngineHandle, type LoadoutState } from "@/game/engine";
 import type { SaveData } from "@/game/save";
 import { WEAPONS } from "@/game/progression";
+import { chapterObjectives } from "@/game/objectives";
+import { Button } from "@/components/ui/button";
+import { Check, Circle, ArrowRight } from "lucide-react";
 
 type Props = {
   start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone" | "storyFlags">;
@@ -22,8 +25,11 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
     health: 100,
     maxHealth: 100,
     enemies: 0,
+    storyFlags: start.storyFlags ?? [],
   });
   const [toast, setToast] = useState<string | null>(null);
+  const [hasStartedWalking, setHasStartedWalking] = useState(!intro);
+  const objectives = chapterObjectives(loadout.zone, loadout.storyFlags, loadout.unlocked.includes("tagger"));
   const [cut, setCut] = useState<CutsceneState>({
     active: intro && start.zone === "club",
     waking: intro && start.zone === "club",
@@ -166,6 +172,29 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
         )}
       </div>
 
+      {!cut.active && (
+        <aside aria-label="Objectives" className="pointer-events-none absolute right-4 top-4 w-60 max-w-[48vw] border-l-2 border-secondary/70 bg-background/65 px-3 py-3 sm:right-6 sm:top-6 sm:w-72">
+          <p className="font-display text-xs uppercase text-secondary">Chapter 1 · Get your bearings</p>
+          <h2 className="mb-3 font-display text-xl text-foreground">Objectives</h2>
+          <ol className="space-y-2 text-xs leading-relaxed sm:text-sm">
+            {objectives.map((objective) => (
+              <li key={objective.id} className={`flex items-start gap-2 ${objective.complete ? "text-muted-foreground" : "text-foreground"}`}>
+                {objective.complete ? <Check className="mt-0.5 size-4 shrink-0 text-accent" /> : <Circle className="mt-0.5 size-3.5 shrink-0 text-secondary" />}
+                <span className={objective.complete ? "line-through" : ""}>{objective.label}</span>
+              </li>
+            ))}
+          </ol>
+        </aside>
+      )}
+
+      {!cut.active && locked && loadout.zone === "club" && (
+        <div className="pointer-events-none absolute bottom-28 left-4 border-l-2 border-secondary/60 bg-background/65 px-3 py-2 text-xs text-foreground sm:left-6">
+          <p className="mb-1 font-display text-sm text-secondary">Get your bearings</p>
+          <p><kbd>W A S D</kbd> · Move &nbsp; <kbd>Mouse</kbd> · Look</p>
+          <p className="mt-1"><kbd>Shift</kbd> · Sprint &nbsp; <kbd>E</kbd> · Interact &nbsp; <kbd>Esc</kbd> · Pause</p>
+        </div>
+      )}
+
       {cut.active && (
         <div className="absolute inset-0 select-none">
           {/* fade up from black */}
@@ -211,13 +240,13 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       )}
 
       {!locked && !cut.active && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/80 px-6 text-center backdrop-blur-md">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/30 px-6 text-center">
           <div>
             <p className="font-display text-xs uppercase tracking-[0.5em] text-secondary">
-              Paused
+              {hasStartedWalking ? "Paused" : "You’re awake"}
             </p>
             <h2 className="mt-1 font-display text-5xl uppercase tracking-wide text-foreground drop-shadow-[4px_4px_0_var(--outline)]">
-              Take Five
+              {hasStartedWalking ? "Take Five" : "Get your bearings"}
             </h2>
           </div>
           <ul className="grid gap-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -231,13 +260,16 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
             <li>Esc — Pause · Autosaves every 10s</li>
           </ul>
           <div className="flex flex-wrap justify-center gap-3">
-            <button
+            <Button
               className="rounded-md bg-primary px-8 py-3 font-display text-lg uppercase tracking-widest text-primary-foreground shadow-tag transition-transform hover:-translate-y-1"
-              onClick={() => engineRef.current?.requestPointerLock()}
+              onClick={() => {
+                setHasStartedWalking(true);
+                engineRef.current?.requestPointerLock();
+              }}
             >
-              Resume
-            </button>
-            <button
+              {hasStartedWalking ? "Resume" : "Start walking"} <ArrowRight />
+            </Button>
+            <Button variant="outline"
               className="rounded-md border-2 border-foreground/60 bg-card px-8 py-3 font-display text-lg uppercase tracking-widest text-foreground transition-transform hover:-translate-y-1"
               onClick={() => {
                 engineRef.current?.save();
@@ -245,7 +277,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
               }}
             >
               Save &amp; Quit
-            </button>
+            </Button>
           </div>
         </div>
       )}

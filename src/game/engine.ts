@@ -41,6 +41,7 @@ export type LoadoutState = {
   health: number;
   maxHealth: number;
   enemies: number;
+  storyFlags: string[];
 };
 
 const PLAYER_RADIUS = 0.5;
@@ -155,6 +156,7 @@ export function createEngine(
     if (finishedScript === BOOTH_AFTERSHOCK) storyFlags.add(BOOTH_AFTERSHOCK.id);
     activeScript = null;
     persist();
+    emitLoadout();
     onCutscene({ active: false, progress: 1, line: null });
   }
 
@@ -202,6 +204,7 @@ export function createEngine(
       health,
       maxHealth: MAX_HEALTH,
       enemies: livingEnemies,
+      storyFlags: [...storyFlags],
     });
   emitLoadout();
 
@@ -223,6 +226,7 @@ export function createEngine(
     if (!build) return;
     disposeLevel(level);
     zone = to;
+    if (zone === "city") storyFlags.add("ch1-left-club");
     level = build(gradient);
     livingEnemies = level.enemies.length;
     lastHudEnemies = livingEnemies;
@@ -250,6 +254,7 @@ export function createEngine(
 
   const keys = new Set<string>();
   const onKeyDown = (e: KeyboardEvent) => {
+    if (cutscene || document.pointerLockElement !== canvas) return;
     if (e.code === "KeyE" && !e.repeat && !cutscene && boothInRange) {
       e.preventDefault();
       startCutscene(BOOTH_AFTERSHOCK);
@@ -301,7 +306,14 @@ export function createEngine(
     }
   };
 
-  const onLock = () => onLockChange(document.pointerLockElement === canvas);
+  const onLock = () => {
+    const locked = document.pointerLockElement === canvas;
+    if (!locked) {
+      keys.clear();
+      velocity.set(0, 0);
+    }
+    onLockChange(locked);
+  };
 
   const resize = () => {
     const w = canvas.clientWidth || window.innerWidth;

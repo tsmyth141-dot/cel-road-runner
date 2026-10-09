@@ -250,7 +250,8 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
             </h2>
           </div>
           <ul className="grid gap-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            <li>WASD — Move</li>
+            <li>W — Forward · S — Backward</li>
+            <li>A — Left · D — Right</li>
             <li>Shift — Sprint</li>
             <li>Mouse — Look</li>
             <li>Click — Strike / Fire</li>

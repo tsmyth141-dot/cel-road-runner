@@ -26,7 +26,7 @@ export const CLUB_INTRO: CutsceneScript = {
     { t: 4.2, pos: [-14.15, 1.3, 4.3], yaw: -1.3, pitch: -0.32 },
     { t: 7.5, pos: [-14.0, 1.62, 4.3], yaw: -1.94, pitch: -0.06 },
     { t: 13, pos: [-13.8, 1.68, 4.25], yaw: -1.98, pitch: 0.12 },
-    { t: 19, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0.08 },
+    { t: 19, pos: [-13.45, 1.7, 4.2], yaw: -1.94, pitch: 0.08 },
   ],
   lines: [
     { from: 0.9, to: 4.4, line: { speaker: BARTENDER, text: "Hey. Hey — you still breathing down there?" } },
@@ -42,10 +42,10 @@ export const BOOTH_AFTERSHOCK: CutsceneScript = {
   id: "ch1-booth-aftershock",
   duration: 8.5,
   keys: [
-    { t: 0, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0.08 },
+    { t: 0, pos: [-13.45, 1.7, 4.2], yaw: -1.94, pitch: 0.08 },
     { t: 2.2, pos: [-14.0, 1.55, 4.15], yaw: -0.82, pitch: -0.48 },
     { t: 5.4, pos: [-13.9, 1.62, 4.18], yaw: -1.72, pitch: -0.08 },
-    { t: 8.5, pos: [-14.2, 1.7, 4.2], yaw: -1.94, pitch: 0.04 },
+    { t: 8.5, pos: [-13.45, 1.7, 4.2], yaw: -1.94, pitch: 0.04 },
   ],
   lines: [
     { from: 1.2, to: 4.2, line: { speaker: "You", text: "Empty glasses. Spilled ice. None of this is coming back to me." } },

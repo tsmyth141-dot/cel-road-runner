@@ -26,6 +26,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [cut, setCut] = useState<CutsceneState>({
     active: intro && start.zone === "club",
+    waking: intro && start.zone === "club",
     progress: 0,
     line: null,
   });
@@ -64,7 +65,10 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
 
   return (
     <div className="fixed inset-0 bg-background">
-      <canvas ref={canvasRef} className="block h-full w-full" />
+      <canvas ref={canvasRef} className={`block h-full w-full ${cut.active && cut.waking ? "wake-vision" : ""}`} />
+      {cut.active && cut.waking && (
+        <div className="pointer-events-none absolute inset-0 wake-eyelids" aria-hidden="true" />
+      )}
 
       {/* HUD */}
       <div

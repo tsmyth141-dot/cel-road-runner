@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep the nightclub's bar and booth scenery authored in `src/game/nightclub.ts` with shared `makeBuilder` materials; this preserves the existing lightweight level pipeline and Chromebook performance.
+- Keep waking visual effects scoped to the intro canvas with CSS, leaving dialogue sharp and removing effects on scene end; this avoids extra WebGL passes on Chromebooks.

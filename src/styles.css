@@ -127,6 +127,41 @@
   --border: oklch(0.36 0.06 295);
   --input: oklch(0.36 0.06 295);
   --ring: oklch(0.68 0.24 5);
+  --wake-shadow: oklch(0.07 0.015 285);
+}
+
+/* Only the opening image is affected; subtitles and controls remain sharp. */
+.wake-vision {
+  animation: wake-focus 13s linear both;
+}
+
+.wake-eyelids {
+  background: radial-gradient(ellipse at center, transparent 28%, var(--wake-shadow) 86%);
+  animation: wake-eyelids 13s linear both;
+}
+
+@keyframes wake-focus {
+  0% { filter: blur(9px) saturate(0.55) brightness(0.65); }
+  15% { filter: blur(5px) saturate(0.65) brightness(0.8); }
+  23% { filter: blur(7px) saturate(0.6) brightness(0.7); }
+  42% { filter: blur(3px) saturate(0.8) brightness(0.9); }
+  55% { filter: blur(4px) saturate(0.75) brightness(0.85); }
+  80% { filter: blur(1px) saturate(0.95) brightness(1); }
+  100% { filter: none; }
+}
+
+@keyframes wake-eyelids {
+  0% { opacity: 1; transform: scaleY(0.3); background-color: var(--wake-shadow); }
+  12% { opacity: 0.85; transform: scaleY(1); background-color: transparent; }
+  23% { opacity: 0.95; transform: scaleY(1); background-color: color-mix(in oklab, var(--wake-shadow) 65%, transparent); }
+  40% { opacity: 0.65; background-color: transparent; }
+  55% { opacity: 0.75; }
+  100% { opacity: 0; transform: scaleY(1); background-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wake-vision, .wake-eyelids { animation: none; }
+  .wake-eyelids { display: none; }
 }
 
 @utility bg-spray {

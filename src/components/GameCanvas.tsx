@@ -241,6 +241,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
 
       {!locked && !cut.active && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/30 px-6 text-center">
+          <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-md border border-foreground/20 bg-background/90 px-6 py-7">
           <div>
             <p className="font-display text-xs uppercase tracking-[0.5em] text-secondary">
               {hasStartedWalking ? "Paused" : "You’re awake"}
@@ -279,6 +280,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
             >
               Save &amp; Quit
             </Button>
+          </div>
           </div>
         </div>
       )}

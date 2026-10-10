@@ -5,6 +5,8 @@ import { WEAPONS } from "@/game/progression";
 import { chapterObjectives } from "@/game/objectives";
 import { Button } from "@/components/ui/button";
 import { Check, Circle, ArrowRight } from "lucide-react";
+import { MovementControls } from "./MovementControls";
+import { BARTENDER_CHOICES } from "@/game/dialogue";
 
 type Props = {
   start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone" | "storyFlags">;
@@ -29,6 +31,8 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
   });
   const [toast, setToast] = useState<string | null>(null);
   const [hasStartedWalking, setHasStartedWalking] = useState(!intro);
+  const [talking, setTalking] = useState(false);
+  const [reply, setReply] = useState<string | null>(null);
   const objectives = chapterObjectives(loadout.zone, loadout.storyFlags, loadout.unlocked.includes("tagger"));
   const [cut, setCut] = useState<CutsceneState>({
     active: intro && start.zone === "club",
@@ -55,6 +59,10 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       },
       {
         playIntro: intro,
+        onConversation: (active) => {
+          setTalking(active);
+          setReply(null);
+        },
         onCutscene: (state) => {
           cutsceneActiveRef.current = state.active;
           setCut(state);
@@ -190,7 +198,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       {!cut.active && locked && loadout.zone === "club" && (
         <div className="pointer-events-none absolute bottom-28 left-4 border-l-2 border-secondary/60 bg-background/65 px-3 py-2 text-xs text-foreground sm:left-6">
           <p className="mb-1 font-display text-sm text-secondary">Get your bearings</p>
-          <p><kbd>W A S D</kbd> · Move &nbsp; <kbd>Mouse</kbd> · Look</p>
+          <p><kbd>W ↑</kbd> Forward · <kbd>A ←</kbd> Left · <kbd>S ↓</kbd> Back · <kbd>D →</kbd> Right</p>
           <p className="mt-1"><kbd>Shift</kbd> · Sprint &nbsp; <kbd>E</kbd> · Interact &nbsp; <kbd>Esc</kbd> · Pause</p>
         </div>
       )}
@@ -239,7 +247,22 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
         </div>
       )}
 
-      {!locked && !cut.active && (
+      {talking && (
+        <div className="absolute inset-0 flex items-end justify-center bg-background/20 p-4 pb-16 sm:pb-24">
+          <section role="dialog" aria-modal="true" aria-label="Talk to bartender" className="w-full max-w-xl rounded-md border border-secondary/60 bg-background/95 p-5 shadow-tag">
+            <p className="font-display text-lg text-secondary">Bartender</p>
+            <p aria-live="polite" className="my-3 text-sm leading-relaxed text-foreground">{reply ?? "You all right? Anything you need to ask before you go?"}</p>
+            <div className="flex flex-col gap-2">
+              {BARTENDER_CHOICES.map((choice) => (
+                <Button key={choice.id} variant="ghost" className="h-auto justify-start whitespace-normal border-l-2 border-secondary/40 px-3 py-2 text-left text-foreground" onClick={() => setReply(choice.answer)}>{choice.question}</Button>
+              ))}
+              <Button variant="secondary" className="mt-2 self-start" onClick={() => engineRef.current?.closeConversation()}>I’ll be going <ArrowRight /></Button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {!locked && !cut.active && !talking && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/30 px-6 text-center">
           <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-md border border-foreground/20 bg-background/90 px-6 py-7">
           <div>
@@ -250,17 +273,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
               {hasStartedWalking ? "Take Five" : "Get your bearings"}
             </h2>
           </div>
-          <ul className="grid gap-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            <li>W — Forward · S — Backward</li>
-            <li>A — Left · D — Right</li>
-            <li>Shift — Sprint</li>
-            <li>Mouse — Look</li>
-            <li>Click — Strike / Fire</li>
-            <li>E — Interact</li>
-            <li>1-5 — Swap earned weapons</li>
-            <li>Walk into the lit doorway to change area</li>
-            <li>Esc — Pause · Autosaves every 10s</li>
-          </ul>
+          <MovementControls />
           <div className="flex flex-wrap justify-center gap-3">
             <Button
               className="rounded-md bg-primary px-8 py-3 font-display text-lg uppercase tracking-widest text-primary-foreground shadow-tag transition-transform hover:-translate-y-1"

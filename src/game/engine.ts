@@ -4,8 +4,8 @@ import { buildNightclub } from "./nightclub";
 import { buildCity } from "./city";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
+import { movementIntent } from "./controls";
 import {
-  BOOTH_AFTERSHOCK,
   CLUB_INTRO,
   lineAt,
   sampleCutscene,
@@ -18,6 +18,7 @@ export type EngineHandle = {
   requestPointerLock: () => void;
   save: () => void;
   skipCutscene: () => void;
+  closeConversation: () => void;
 };
 
 export type CutsceneState = {
@@ -70,6 +71,7 @@ export function createEngine(
   options: {
     playIntro?: boolean;
     onCutscene?: (state: CutsceneState) => void;
+    onConversation?: (active: boolean) => void;
   } = {},
 ): EngineHandle {
   const onCutscene = options.onCutscene ?? (() => {});
@@ -119,7 +121,8 @@ export function createEngine(
   let doorCooldown = 0;
   let prompt: string | undefined;
   const storyFlags = new Set(start.storyFlags ?? []);
-  let boothInRange = false;
+  let bartenderInRange = false;
+  let conversation = false;
   let health = MAX_HEALTH;
   let livingEnemies = level.enemies.length;
   let lastHudHealth = health;
@@ -153,28 +156,16 @@ export function createEngine(
     }
     pitch = 0;
     velocity.set(0, 0);
-    if (finishedScript === BOOTH_AFTERSHOCK) storyFlags.add(BOOTH_AFTERSHOCK.id);
     activeScript = null;
     persist();
     emitLoadout();
     onCutscene({ active: false, progress: 1, line: null });
   }
 
-  function startCutscene(script: CutsceneScript) {
-    if (cutscene) return;
-    activeScript = script;
-    cutscene = true;
-    cutsceneEnded = false;
-    cutTime = 0;
-    cutStart = 0;
-    cutLine = null;
-    keys.clear();
-    velocity.set(0, 0);
-    prompt = undefined;
-    viewRig.visible = false;
-    if (document.pointerLockElement === canvas) document.exitPointerLock();
-    emitLoadout();
-    onCutscene({ active: true, progress: 0, line: null });
+  function closeConversation() {
+    conversation = false;
+    options.onConversation?.(false);
+    requestPointerLock();
   }
 
   function requestPointerLock() {
@@ -254,10 +245,18 @@ export function createEngine(
 
   const keys = new Set<string>();
   const onKeyDown = (e: KeyboardEvent) => {
+    if (conversation) {
+      if (e.code === "Escape") closeConversation();
+      return;
+    }
     if (cutscene || document.pointerLockElement !== canvas) return;
-    if (e.code === "KeyE" && !e.repeat && !cutscene && boothInRange) {
+    if (e.code === "KeyE" && !e.repeat && bartenderInRange) {
       e.preventDefault();
-      startCutscene(BOOTH_AFTERSHOCK);
+      conversation = true;
+      keys.clear();
+      velocity.set(0, 0);
+      options.onConversation?.(true);
+      document.exitPointerLock();
       return;
     }
     keys.add(e.code);
@@ -395,14 +394,9 @@ export function createEngine(
       if (cutTime >= script.duration) endCutscene();
     }
 
-    const fx = -Math.sin(yaw);
-    const fz = -Math.cos(yaw);
-    wish.set(0, 0);
-    if (cutscene) keys.clear();
-    if (keys.has("KeyW") || keys.has("ArrowUp")) wish.x += fx, (wish.y += fz);
-    if (keys.has("KeyS") || keys.has("ArrowDown")) wish.x -= fx, (wish.y -= fz);
-    if (keys.has("KeyD") || keys.has("ArrowRight")) wish.x += -fz, (wish.y += fx);
-    if (keys.has("KeyA") || keys.has("ArrowLeft")) wish.x -= -fz, (wish.y -= fx);
+    if (cutscene || conversation) keys.clear();
+    const [moveX, moveZ] = movementIntent(keys, yaw);
+    wish.set(moveX, moveZ);
 
     const sprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const maxSpeed = sprinting ? SPRINT : WALK;
@@ -531,12 +525,12 @@ export function createEngine(
     // Doors between levels
     doorCooldown = Math.max(0, doorCooldown - dt);
     let nearPrompt: string | undefined;
-    boothInRange = false;
-    if (!cutscene && zone === "club" && !storyFlags.has(BOOTH_AFTERSHOCK.id)) {
-      const boothDx = player.x - -14.0;
-      const boothDz = player.z - 4.2;
-      boothInRange = boothDx * boothDx + boothDz * boothDz < 3.2 * 3.2;
-      if (boothInRange) nearPrompt = "E · Check the booth";
+    bartenderInRange = false;
+    if (!cutscene && !conversation && zone === "club") {
+      const dx = player.x - -10.6;
+      const dz = player.z - 5.6;
+      bartenderInRange = dx * dx + dz * dz < 3.6 * 3.6;
+      if (bartenderInRange) nearPrompt = "E · Talk to bartender";
     }
     for (const ex of level.exits) {
       const dx = ex.x - player.x;
@@ -624,5 +618,6 @@ export function createEngine(
     },
     save: persist,
     skipCutscene,
+    closeConversation,
   };
 }

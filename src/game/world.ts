@@ -211,9 +211,9 @@ export function makeBuilder(gradient: THREE.DataTexture) {
       mesh.scale.set(...partScale);
       wrap.add(mesh);
       if (outline > 0) {
-        const ink = inkWeight(outline);
+        const ink = outline * 0.85;
         const contour = new THREE.Mesh(geometry, OUTLINE_MAT);
-        contour.scale.set(partScale[0] + ink, partScale[1] + ink, partScale[2] + ink);
+        contour.scale.set(partScale[0] * (1 + ink), partScale[1] * (1 + ink), partScale[2] * (1 + ink));
         wrap.add(contour);
       }
       wrap.position.set(...position);
@@ -240,16 +240,16 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     part(cube, 0x262231, [0.25, 0.65, 0], [0.34, 0.86, 0.36], [0, 0, 0.03]);
 
     // Broad shirt and waistcoat create a recognisable, top-heavy silhouette.
-    part(cube, shirt, [0, 1.48, 0], [1.18, 1.02, 0.52], [0, 0, -0.025], 0.085);
+    part(cube, shirt, [0, 1.48, 0], [1.02, 0.94, 0.46], [0, 0, 0], 0.085);
     part(cube, vest, [0, 1.5, -0.29], [0.9, 0.9, 0.12], [0, 0, -0.025], 0.045);
     part(cube, apron, [0, 0.92, -0.31], [0.82, 0.82, 0.1], [0, 0, 0.02], 0.04);
     part(cube, 0x0d4e4d, [0, 0.49, -0.3], [0.9, 0.08, 0.12], [0, 0, 0], 0.025);
     part(cube, gold, [0, 1.67, -0.37], [0.13, 0.13, 0.05], [0, 0, Math.PI / 4], 0.02);
-    part(cube, 0xf34b7e, [0.28, 1.74, -0.37], [0.22, 0.11, 0.04], [0, 0, -0.08], 0.02);
+    part(cube, gold, [0.28, 1.74, -0.37], [0.17, 0.07, 0.025], [0, 0, 0], 0.02);
 
     // Connected shoulder / elbow pivots keep the arms relaxed and anatomically readable.
     const leftShoulder = new THREE.Group();
-    leftShoulder.position.set(-0.59, 1.79, 0);
+    leftShoulder.position.set(-0.57, 1.79, 0);
     leftShoulder.rotation.set(-0.12, 0, -0.16);
     g.add(leftShoulder);
     const armGeo = new THREE.CylinderGeometry(0.5, 0.42, 1, 8);
@@ -269,18 +269,18 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     addArm(leftShoulder, 0.35);
 
     const rightShoulder = new THREE.Group();
-    rightShoulder.position.set(0.59, 1.79, 0);
+    rightShoulder.position.set(0.57, 1.79, 0);
     rightShoulder.rotation.set(0, 0, 0.12);
     g.add(rightShoulder);
     addArm(rightShoulder, 0.12);
 
     // A clean, human face: rounded skull, tapered jaw and a restrained expression.
     const head = new THREE.Group();
-    head.position.set(-0.03, 2.25, -0.02);
+    part(roundGeo, skin, [0, 2.0, 0], [0.25, 0.2, 0.25], [0, 0, 0], 0.025);
+    head.position.set(0, 2.22, -0.02);
     head.rotation.set(-0.05, 0.02, -0.02);
     g.add(head);
     part(headGeo, skin, [0, 0, 0], [0.7, 0.84, 0.68], [0, 0, 0], 0.035, head);
-    part(headGeo, skin, [0, -0.22, -0.065], [0.58, 0.39, 0.56], [0, 0, 0], 0, head);
     // Hair hugs the crown instead of stacking disconnected slabs over the face.
     part(headGeo, 0x18141b, [0, 0.32, 0.04], [0.73, 0.27, 0.7], [0, 0, -0.08], 0.025, head);
     part(headGeo, 0x18141b, [0.27, 0.17, 0.12], [0.22, 0.34, 0.55], [0, 0, 0.15], 0, head);
@@ -290,13 +290,12 @@ export function makeBuilder(gradient: THREE.DataTexture) {
       part(cube, 0x251922, [eyeX, 0.18, -0.315], [0.21, 0.035, 0.035], [0, 0, eyeX * 0.2], 0, head);
     }
     part(headGeo, skinLight, [0, -0.095, -0.32], [0.105, 0.13, 0.095], [0, 0, 0], 0, head);
-    part(cube, 0x43282b, [0, -0.29, -0.285], [0.22, 0.025, 0.035], [0, 0, -0.02], 0, head);
+    part(cube, 0x43282b, [0, -0.21, -0.30], [0.18, 0.02, 0.025], [0, 0, 0], 0, head);
     part(headGeo, skinLight, [0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
     part(headGeo, skinLight, [-0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
 
-    // Bar towel and apron tie add readable occupational detail from a distance.
-    part(cube, 0xe64d79, [-0.53, 1.34, -0.37], [0.18, 0.82, 0.08], [0, 0, -0.12], 0.035);
-    part(cube, gold, [-0.43, 1.06, -0.42], [0.2, 0.07, 0.05], [0, 0, -0.12], 0.018);
+    // A short neutral towel at the belt cannot be mistaken for an arm.
+    part(cube, shirt, [0.32, 0.9, -0.39], [0.16, 0.28, 0.04], [0, 0, 0], 0.02);
 
     g.position.set(x, 0, z);
     g.rotation.y = rotY;

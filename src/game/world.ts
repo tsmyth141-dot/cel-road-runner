@@ -290,7 +290,7 @@ export function makeBuilder(gradient: THREE.DataTexture) {
       part(cube, 0x251922, [eyeX, 0.18, -0.315], [0.21, 0.035, 0.035], [0, 0, eyeX * 0.2], 0, head);
     }
     part(headGeo, skinLight, [0, -0.095, -0.32], [0.105, 0.13, 0.095], [0, 0, 0], 0, head);
-    part(cube, 0x43282b, [0, -0.29, -0.285], [0.22, 0.025, 0.035], [0, 0, -0.02], 0, head);
+    part(cube, 0x43282b, [0, -0.21, -0.30], [0.18, 0.02, 0.025], [0, 0, 0], 0, head);
     part(headGeo, skinLight, [0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
     part(headGeo, skinLight, [-0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
 

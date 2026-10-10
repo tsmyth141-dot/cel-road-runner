@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Correct bartender proportions and remove pink arm-like towel; clarify traditional WASD; remove booth replay and add optional bartender conversation.
+- [x] Correct bartender proportions and remove pink arm-like towel; clarify traditional WASD; remove booth replay and add optional bartender conversation.
 
 - [x] Refine bartender arms and add post-opening objectives, controls, and verified movement handover.
 

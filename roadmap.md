@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Replace wall-like club exits with open doorways, tighten Canal Street into two readable blocks, ground pedestrians, and provide a distinctive reachable home.
+
 - [x] Correct bartender proportions and remove pink arm-like towel; clarify traditional WASD; remove booth replay and add optional bartender conversation.
 
 - [x] Refine bartender arms and add post-opening objectives, controls, and verified movement handover.

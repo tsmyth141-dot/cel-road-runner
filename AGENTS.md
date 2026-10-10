@@ -14,3 +14,4 @@
 - Derive chapter objectives from engine story flags and loadout in a shared objective module; this keeps the HUD aligned with saved gameplay progress.
 - Keep optional bartender conversation separate from cutscene playback, using engine interaction state and DOM choices; this preserves the player's position and never replays the wake-up.
 - Centralize camera-relative movement intent in a pure tested helper; this keeps traditional directional controls consistent with mouse look.
+- Share street landmarks between level scenery and navigation tests; this keeps door thresholds and the two-block home approach aligned.

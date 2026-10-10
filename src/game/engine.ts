@@ -460,8 +460,9 @@ export function createEngine(
           arm.rotation.z = baseZ + Math.sin(t * 0.62) * 0.018;
         }
       } else {
-        p.position.y = Math.abs(Math.sin(t)) * 0.03;
-        p.rotation.z = Math.sin(t) * 0.035;
+        // Never lift/roll the entire person: that moves both feet off the pavement.
+        p.position.y = 0;
+        p.rotation.z = 0;
       }
     }
 
@@ -480,8 +481,10 @@ export function createEngine(
           const targetYaw = Math.atan2(dx, dz);
           const yawDiff = Math.atan2(Math.sin(targetYaw - enemy.root.rotation.y), Math.cos(targetYaw - enemy.root.rotation.y));
           enemy.root.rotation.y += THREE.MathUtils.clamp(yawDiff, -2.8 * dt, 2.8 * dt);
-          enemy.root.position.x += (dx / distance) * enemy.speed * dt;
-          enemy.root.position.z += (dz / distance) * enemy.speed * dt;
+          const nextX = enemy.root.position.x + (dx / distance) * enemy.speed * dt;
+          const nextZ = enemy.root.position.z + (dz / distance) * enemy.speed * dt;
+          const blocked = level.colliders.some(b => nextX > b.minX - 0.35 && nextX < b.maxX + 0.35 && nextZ > b.minZ - 0.35 && nextZ < b.maxZ + 0.35);
+          if (!blocked) enemy.root.position.set(nextX, 0, nextZ);
         } else if (distance <= 1.35 && enemy.attackCooldown === 0) {
           health = Math.max(0, health - enemy.damage);
           enemy.attackCooldown = 1.1;

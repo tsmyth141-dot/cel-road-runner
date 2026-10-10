@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { makeBuilder, OUTLINE_MAT, type LevelResult } from "./world";
+import { CLUB_INNER_DOOR, CLUB_STREET_SPAWN } from "./neighbourhood";
 
 export type ClubResult = LevelResult;
 
@@ -25,7 +26,9 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
 
   addBox(0, WALL_H / 2, -ROOM_Z, ROOM_X * 2, WALL_H, 1, 0x352a55, { collide: true });
   addBox(0, WALL_H / 2, ROOM_Z, ROOM_X * 2, WALL_H, 1, 0x352a55, { collide: true });
-  addBox(-ROOM_X, WALL_H / 2, 0, 1, WALL_H, ROOM_Z * 2, 0x352a55, { collide: true });
+  // The west wall stops at the exit; a real opening replaces the painted-on portal.
+  addBox(-ROOM_X, WALL_H / 2, -1.75, 1, WALL_H, 28.5, 0x352a55, { collide: true });
+  addBox(-ROOM_X, 6.6, 14.25, 1, 4.8, 3.5, 0x352a55, { outline: 0 });
   addBox(ROOM_X, WALL_H / 2, 0, 1, WALL_H, ROOM_Z * 2, 0x352a55, { collide: true });
 
   // Skirting neon strip all the way round for a bold cel outline read
@@ -287,12 +290,18 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   }
 
   /* ---------------- Exit to the street ---------------- */
-  const doorX = -ROOM_X + 0.7;
-  addBox(doorX, 2.2, 14, 0.5, 4.4, 4.4, 0x0f0b1c, { outline: 0.06 });
-  addBox(doorX - 0.2, 2.1, 14, 0.2, 3.8, 3.6, 0x27d17c, { outline: 0, emissive: true });
-  addBox(doorX + 0.3, 5.1, 14, 0.3, 1.1, 4.6, 0xffd400, { outline: 0.04, emissive: true });
-  const exitGlow = new THREE.PointLight(0x27d17c, 30, 18, 2);
-  exitGlow.position.set(doorX + 1.5, 3, 14);
+  const doorX = -21.35;
+  addBox(doorX, 2.1, 12.45, 0.45, 4.2, 0.3, 0x4c5854, { collide: true, outline: 0.025 });
+  addBox(doorX, 2.1, 15.65, 0.45, 4.2, 0.3, 0x4c5854, { collide: true, outline: 0.025 });
+  addBox(doorX, 4.25, 14.05, 0.5, 0.3, 3.5, 0x4c5854, { outline: 0.025 });
+  // Open metal door, pushed outwards along the passage, with a visible push bar.
+  addBox(-22.8, 2.02, 12.66, 2.8, 4, 0.16, 0x31584a, { outline: 0.025 });
+  addBox(-22.4, 1.9, 12.8, 1.9, 0.09, 0.1, 0xb6c3b6, { outline: 0 });
+  addBox(-22.4, 0.03, 14.05, 3.5, 0.06, 3.1, 0x525958, { outline: 0 });
+  addBox(-23.6, 2.1, 14.1, 0.1, 4, 2.7, 0x75858b, { outline: 0, emissive: true });
+  addBox(doorX + 0.1, 4.85, 14.05, 0.2, 0.65, 1.65, 0x27d17c, { outline: 0.025, emissive: true });
+  const exitGlow = new THREE.PointLight(0x91c5ab, 18, 12, 2);
+  exitGlow.position.set(doorX + 1, 3, 14);
   root.add(exitGlow);
   // Entry corridor rails
   addBox(-16.5, 1.4, 11.4, 8, 2.8, 0.4, 0x1b1430, { collide: true, outline: 0.05 });
@@ -318,7 +327,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     pickups,
     enemies: [],
     exits: [
-      { x: doorX + 1.6, z: 14, r: 2.2, to: "city", spawn: [-13, 6], yaw: -Math.PI / 2, label: "Step outside" },
+      { ...CLUB_INNER_DOOR, r: 0.75, to: "city", spawn: CLUB_STREET_SPAWN, yaw: Math.PI, label: "Step outside" },
     ],
     background: 0x120c22,
     fog: { color: 0x120c22, near: 12, far: 48 },

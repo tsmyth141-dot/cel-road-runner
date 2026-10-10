@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { makeBuilder, type LevelResult } from "./world";
+import { CLUB_STREET_DOOR, HOME, groundedIdleHeight } from "./neighbourhood";
 
 const BOUND = 58;
 
@@ -11,114 +12,87 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   const pickups: THREE.Object3D[] = [];
   const enemies: LevelResult["enemies"] = [];
 
-  /* ---------------- Ground + roads ---------------- */
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), toon(0x241f33));
+  /* ---------------- A connected two-block neighbourhood ---------------- */
+  const pavement = toon(0x5e6268);
+  const pavementTexture = new THREE.DataTexture(new Uint8Array([
+    145, 148, 152, 255, 125, 130, 137, 255,
+    125, 130, 137, 255, 145, 148, 152, 255,
+  ]), 2, 2, THREE.RGBAFormat);
+  pavementTexture.colorSpace = THREE.SRGBColorSpace;
+  pavementTexture.wrapS = pavementTexture.wrapT = THREE.RepeatWrapping;
+  pavementTexture.repeat.set(70, 70);
+  pavementTexture.magFilter = THREE.NearestFilter;
+  pavementTexture.needsUpdate = true;
+  pavement.map = pavementTexture;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), pavement);
   ground.rotation.x = -Math.PI / 2;
   root.add(ground);
-
-  const roadMat = toon(0x15121f);
-  for (const rot of [0, Math.PI / 2]) {
-    const r = new THREE.Mesh(new THREE.PlaneGeometry(12, 130), roadMat);
-    r.rotation.x = -Math.PI / 2;
-    r.rotation.z = rot;
-    r.position.y = 0.02;
-    root.add(r);
-  }
-  // Kerbs + centre dashes
-  for (let i = -6; i <= 6; i++) {
-    addBox(0, 0.04, i * 9, 0.9, 0.02, 4, 0xffd400, { outline: 0, emissive: true });
-    addBox(i * 9, 0.04, 0, 4, 0.02, 0.9, 0xffd400, { outline: 0, emissive: true });
-  }
-  for (const s of [-1, 1]) {
-    addBox(s * 6.4, 0.16, 0, 0.8, 0.32, 130, 0x39304f, { outline: 0.03 });
-    addBox(0, 0.16, s * 6.4, 130, 0.32, 0.8, 0x39304f, { outline: 0.03 });
-  }
-  // Zebra crossing into the square
-  for (let i = 0; i < 6; i++) {
-    addBox(-9 + i * 1.6, 0.05, 10, 1, 0.02, 8, 0xf2f2f2, { outline: 0, emissive: true });
-  }
-
-  /* ---------------- Town square ---------------- */
-  const plaza = new THREE.Mesh(new THREE.CircleGeometry(11, 24), toon(0x2f2748));
-  plaza.rotation.x = -Math.PI / 2;
-  plaza.position.set(-22, 0.06, 22);
-  root.add(plaza);
-  // Fountain
-  addBox(-22, 0.5, 22, 7, 1, 7, 0x3b3157, { collide: true, outline: 0.07 });
-  addBox(-22, 1.1, 22, 6, 0.3, 6, 0x00e5ff, { outline: 0, emissive: true });
-  addBox(-22, 2.1, 22, 1.2, 3, 1.2, 0x554a7a, { collide: true });
-  addBox(-22, 3.8, 22, 2.4, 0.5, 2.4, 0x9fe8ff, { outline: 0.04, emissive: true });
-  const fountainLight = new THREE.PointLight(0x00e5ff, 16, 18, 2);
-  fountainLight.position.set(-22, 3, 22);
-  root.add(fountainLight);
-  flicker.push(fountainLight);
-  // Benches + planters round the square
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    const bx = -22 + Math.cos(a) * 9;
-    const bz = 22 + Math.sin(a) * 9;
-    addBox(bx, 0.45, bz, 2.6, 0.3, 0.9, 0xd9772f, { rotY: -a, collide: true });
-    addBox(bx, 0.9, bz - 0.35, 2.6, 0.9, 0.2, 0xb3591f, { rotY: -a });
-  }
-
-  /* ---------------- Blocks: shopfronts + towers ---------------- */
-  type B = [x: number, z: number, w: number, h: number, d: number, c: number];
-  const blocks: B[] = [
-    [-30, -20, 20, 18, 16, 0x1f6feb],
-    [-34, 2, 14, 26, 20, 0x6b3fd4],
-    [26, -28, 20, 22, 16, 0xff2e7e],
-    [30, 4, 16, 30, 22, 0x117a8b],
-    [24, 30, 18, 16, 16, 0xffd400],
-    [-2, -38, 30, 20, 14, 0x4b3a8f],
-    [4, 38, 28, 15, 14, 0x27d17c],
-    [-46, 34, 16, 12, 14, 0xff7a1a],
-  ];
-  const neon = [0xff2e7e, 0x00e5ff, 0xffd400, 0x27d17c, 0x8b5cf6, 0xff7a1a];
-  blocks.forEach(([x, z, w, h, d, c], bi) => {
-    addBox(x, h / 2, z, w, h, d, c, { collide: true, outline: 0.1 });
-    addBox(x, h + 0.8, z, w * 0.7, 1.6, d * 0.7, 0x1c1730, {});
-    // Window strips
-    const rows = Math.max(2, Math.floor(h / 5));
-    for (let r = 0; r < rows; r++) {
-      const wy = 4 + r * 4.4;
-      if (wy > h - 2) break;
-      addBox(x, wy, z + d / 2 + 0.06, w * 0.72, 1.1, 0.1, 0xffe9a8, { outline: 0, emissive: true });
-      addBox(x, wy, z - d / 2 - 0.06, w * 0.72, 1.1, 0.1, 0x9fe8ff, { outline: 0, emissive: true });
+  addBox(0, -0.015, 0, 14, 0.04, 130, 0x24272e, { outline: 0 });
+  for (const crossing of [0, 20, 38]) {
+    addBox(0, 0.015, crossing, 130, 0.025, 6, 0x24272e, { outline: 0 });
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 7; i++) {
+        addBox(-5.4 + i * 1.8, 0.045, crossing + side * 4.3, 1.1, 0.015, 2.3, 0xc9c9bd, { outline: 0 });
+      }
     }
-    // Ground-floor shopfront with awning + hanging sign
-    const fz = z + d / 2 + 0.4;
-    addBox(x, 1.6, fz, w * 0.8, 3.2, 0.5, 0x120e22, { outline: 0.05 });
-    addBox(x, 1.6, fz + 0.2, w * 0.6, 2.2, 0.3, neon[bi % neon.length]!, { outline: 0, emissive: true });
-    addBox(x, 3.7, fz + 0.9, w * 0.86, 0.3, 2, bi % 2 ? 0xff2e7e : 0xffd400, { outline: 0.05 });
-    const sign = addBox(x + w * 0.34, 5.4, fz + 0.6, 0.6, 2.4, 2.6, 0x120e22, { outline: 0.05 });
-    void sign;
-    addBox(x + w * 0.34, 5.4, fz + 0.75, 0.7, 1.8, 2, neon[(bi + 3) % neon.length]!, {
-      outline: 0,
-      emissive: true,
-    });
-    const l = new THREE.PointLight(neon[bi % neon.length]!, 16, 16, 2);
-    l.position.set(x, 3, fz + 1);
-    root.add(l);
-    flicker.push(l);
+  }
+  for (const [start, end] of [[-58, -4], [4, 16], [24, 34], [42, 58]]) {
+    for (const side of [-1, 1]) {
+      addBox(side * 7.2, 0.06, (start + end) / 2, 0.3, 0.12, end - start, 0x90959a, { outline: 0 });
+    }
+  }
+  for (let z = -52; z < 58; z += 6) {
+    if ([0, 20, 38].some(c => Math.abs(c - z) < 4)) continue;
+    addBox(0, 0.045, z, 0.16, 0.015, 2.4, 0xc9c9bd, { outline: 0 });
+  }
+
+  const neon = [0xff2e7e, 0x00e5ff, 0xffd400, 0x27d17c, 0x8b5cf6, 0xff7a1a];
+  // Buildings meet the same pavement line, with street-facing windows and entrances.
+  const blocks: [number, number, number, number, number, number][] = [
+    [-27, -17, 20, 14, 22, 0x596c83], [-27, 29, 20, 11, 12, 0x895e61],
+    [24, 9, 18, 16, 16, 0x5b7977], [24, 29, 18, 12, 12, 0x707381],
+    [24, 49, 18, 9, 14, 0x7e7168], [-43, 49, 12, 10, 14, 0x686b78],
+    [24, -21, 18, 18, 28, 0x596c83],
+  ];
+  blocks.forEach(([x, z, w, h, d, c], bi) => {
+    addBox(x, h / 2, z, w, h, d, c, { collide: true, outline: 0.045 });
+    addBox(x, h + 0.18, z, w + 0.5, 0.35, d + 0.5, 0x393b46, { outline: 0.025 });
+    const faceX = x + (x < 0 ? w / 2 + 0.06 : -w / 2 - 0.06);
+    for (let row = 0; row < Math.floor(h / 3.2); row++) {
+      for (let column = 0; column < Math.floor(d / 3.5); column++) {
+        const wz = z - d / 2 + 2 + column * 3.5;
+        addBox(faceX, 2 + row * 3.2, wz, 0.14, 1.5, 1.6, 0x282e37, { outline: 0.015 });
+        addBox(faceX + (x < 0 ? 0.08 : -0.08), 2 + row * 3.2, wz, 0.07, 1.2, 1.3,
+          (row + column + bi) % 3 === 0 ? 0xb3a381 : 0x526773, { outline: 0 });
+      }
+    }
+    addBox(faceX, 1.45, z, 0.24, 2.9, 1.65, 0x303b44, { outline: 0.02 });
+    addBox(faceX, 3.3, z, 1.2, 0.18, 3.1, 0x45444f, { outline: 0.02 });
+    addBox(faceX, 0.5, z - d / 2 + 0.2, 0.15, 1, 0.3, 0xb5aaa0, { outline: 0 });
   });
 
-  /* ---------------- The nightclub facade (way back in) ---------------- */
-  const CX = -18; // door position on the street
-  addBox(-26, 9, 12, 18, 18, 16, 0x2b1b46, { collide: true, outline: 0.1 });
-  addBox(CX + 0.4, 2.4, 12, 1, 4.8, 5, 0x0f0b1c, { outline: 0.06 });
-  addBox(CX, 2.3, 12, 0.4, 4, 4, 0xff2e7e, { outline: 0, emissive: true });
-  addBox(CX + 1.2, 6.4, 12, 2.6, 3.2, 7, 0x120e22, { outline: 0.06 });
-  addBox(CX + 0.8, 6.4, 12, 2, 2.4, 6, 0x27d17c, { outline: 0, emissive: true });
-  const doorLight = new THREE.PointLight(0xff2e7e, 22, 20, 2);
-  doorLight.position.set(CX + 3, 4, 12);
-  root.add(doorLight);
-  flicker.push(doorLight);
-  // Queue + bouncer outside the club
-  addBox(CX + 2.6, 0.55, 9, 0.25, 1.1, 0.25, 0xffd400, { outline: 0.03 });
-  addBox(CX + 2.6, 0.55, 15, 0.25, 1.1, 0.25, 0xffd400, { outline: 0.03 });
-  addPerson(CX + 2.8, 12, 0x0f0b1c, 0x0f0b1c, 0xd79a72, -1.57, 1.1);
-  addPerson(CX + 4.2, 9.4, 0x8b5cf6, 0x241a3d, 0xf2c49b, -1.2, 0.96);
-  addPerson(CX + 4.4, 15.2, 0xffd400, 0x241a3d, 0x8d5a3b, -1.9, 1);
+  /* ---------------- Club: recessed, open metal doorway ---------------- */
+  const CX = CLUB_STREET_DOOR.x;
+  addBox(-26, 9, 12, 18, 18, 16, 0x51415b, { outline: 0.045 });
+  // Collision is split around the passage, not a solid box behind a painted door.
+  colliders.push({ minX: -35, maxX: -17, minZ: 4, maxZ: 10.2 });
+  colliders.push({ minX: -35, maxX: -17, minZ: 13.8, maxZ: 20 });
+  colliders.push({ minX: -35, maxX: -20, minZ: 10.2, maxZ: 13.8 });
+  // Hide the solid facade at ground level with an actual shell instead.
+  const clubMass = root.children[root.children.length - 1];
+  if (clubMass) root.remove(clubMass);
+  addBox(-26, 11.5, 12, 18, 13, 16, 0x51415b, { outline: 0.045 });
+  addBox(-26, 2.5, 7.1, 18, 5, 6.2, 0x51415b, { outline: 0.035 });
+  addBox(-26, 2.5, 16.9, 18, 5, 6.2, 0x51415b, { outline: 0.035 });
+  addBox(-20, 2.4, 12, 0.15, 4.8, 3.6, 0x13151e, { outline: 0 });
+  for (const z of [10.2, 13.8]) addBox(CX + 0.08, 2.35, z, 0.25, 4.7, 0.22, 0x9ca8a5, { outline: 0.02 });
+  addBox(CX + 0.08, 4.7, 12, 0.25, 0.22, 3.8, 0x9ca8a5, { outline: 0.02 });
+  addBox(-15.5, 2.2, 13.72, 3, 4.4, 0.15, 0x31584a, { outline: 0.02 });
+  addBox(-15.3, 2.1, 13.59, 2.1, 0.09, 0.08, 0xb1bdb5, { outline: 0 });
+  addBox(-17, 5.5, 12, 0.15, 0.65, 5.1, 0x19251f, { outline: 0.025 });
+  const clubLight = new THREE.PointLight(0x75b695, 18, 12, 2);
+  clubLight.position.set(-14.8, 4, 12);
+  root.add(clubLight);
 
   /* ---------------- Street furniture ---------------- */
   const lamps: [number, number][] = [
@@ -158,39 +132,52 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     addBox(x, 0.55, z - 2.4 * Math.cos(r), 1.8, 0.4, 0.3, 0xff3b30, { rotY: r, outline: 0, emissive: true });
   }
 
-  // Market stalls in the square
-  for (let i = 0; i < 3; i++) {
-    const sx = -34 + i * 5.5;
-    addBox(sx, 0.9, 30, 4.4, 0.3, 2.6, 0xd9772f, { collide: true, outline: 0.05 });
-    addBox(sx, 2.6, 30, 4.8, 0.35, 3, neon[i % neon.length]!, { outline: 0.05 });
-    addBox(sx - 2, 1.5, 30, 0.2, 3, 0.2, 0x1c1730, { outline: 0.03 });
-    addBox(sx + 2, 1.5, 30, 0.2, 3, 0.2, 0x1c1730, { outline: 0.03 });
-    addPerson(sx, 32.4, neon[i % neon.length]!, 0x241a3d, skinAt(i), 3.14, 1);
-  }
-
-  // Pedestrians wandering the block
+  // Residents stand on the pavement, not in traffic or inside buildings.
   const walkers: [number, number, number, number][] = [
-    [3, 16, 0xff7a1a, 0.4], [-3, -6, 0x00e5ff, 2.2], [-12, 26, 0xf2f2f2, 1.1],
-    [-26, 16, 0x27d17c, 5.0], [12, 12, 0x8b5cf6, 3.4], [-30, 26, 0xffd400, 0.8],
-    [18, -4, 0xff2e7e, 4.2],
+    [-11, 8, 0x75879b, 1.5], [11, 14, 0x8b7261, -1.5],
+    [-11, 29, 0x6f8d7c, 0.4], [11, 44, 0x8f6d80, 2.2],
   ];
-  walkers.forEach(([x, z, c, r], i) => addPerson(x!, z!, c!, 0x241a3d, skinAt(i), r!, 0.95 + (i % 3) * 0.04));
+  walkers.forEach(([x, z, c, r], i) => {
+    const person = addPerson(x, z, c, 0x282d39, skinAt(i), r, 1);
+    person.position.y = groundedIdleHeight();
+  });
 
-  /* ---------------- Chapter 1 encounters ---------------- */
-  // Your walk-up: an open, recessed entry room where the first weapon is recovered.
-  addBox(-4, 2.4, 31, 8, 4.8, 0.5, 0x171029, { collide: true, outline: 0.08 });
-  addBox(-7.75, 2.4, 29, 0.5, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
-  addBox(-0.25, 2.4, 29, 0.5, 4.8, 4, 0x171029, { collide: true, outline: 0.08 });
-  addBox(-4, 4.8, 29, 8, 0.45, 4, 0x241a3d, { outline: 0.07 });
-  addBox(-6.6, 2.1, 26.85, 2.2, 4.2, 0.3, 0x2b2046, { collide: true, outline: 0.07 });
-  addBox(-1.4, 2.1, 26.85, 2.2, 4.2, 0.3, 0x2b2046, { collide: true, outline: 0.07 });
-  addBox(-4, 4.8, 26.7, 5.8, 0.5, 0.5, 0xffd400, { outline: 0.04, emissive: true });
-  addBox(-4, 0.18, 26.1, 3, 0.35, 1.2, 0x4b3a67, { outline: 0.06 });
-  addBox(-6.3, 1.1, 30.2, 1.6, 2.2, 0.7, 0x6b3fd4, { collide: true, outline: 0.06 });
-  addBox(-1.7, 0.7, 30.1, 1.5, 1.4, 0.8, 0xd9772f, { collide: true, outline: 0.06 });
+  /* ---------------- No. 17: your own recognisable house ---------------- */
+  const hx = HOME.x, hz = HOME.z;
+  addBox(hx, 0.035, hz, 10, 0.07, 8, 0x786f65, { outline: 0 });
+  addBox(hx, 2.6, hz + 3.8, 10, 5.2, 0.4, 0xa7aaa2, { collide: true, outline: 0.025 });
+  for (const side of [-1, 1]) {
+    addBox(hx + side * 4.8, 2.6, hz, 0.4, 5.2, 8, 0xa7aaa2, { collide: true, outline: 0.025 });
+    addBox(hx + side * 3.1, 2.6, HOME.frontZ, 3.8, 5.2, 0.4, 0xa7aaa2, { collide: true, outline: 0.025 });
+    addBox(hx + side * 3.1, 2.2, HOME.frontZ - 0.25, 2, 2.1, 0.12, 0x39484f, { outline: 0.02 });
+    addBox(hx + side * 3.1, 2.2, HOME.frontZ - 0.34, 1.7, 1.85, 0.1, 0xb6aa82, { outline: 0 });
+    addBox(hx + side * 3.1, 2.2, HOME.frontZ - 0.42, 0.08, 1.85, 0.08, 0xe0d9c6, { outline: 0 });
+    addBox(hx + side * 3.1, 2.2, HOME.frontZ - 0.42, 1.7, 0.08, 0.08, 0xe0d9c6, { outline: 0 });
+  }
+  addBox(hx, 4.3, HOME.frontZ, 2.4, 1.8, 0.4, 0xa7aaa2, { outline: 0.02 });
+  // Pitched roof (ridge runs along Z), unlike the flat-roof commercial neighbours.
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.4, 10.8, 3, 1), toon(0x364a52));
+  roof.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+  roof.scale.y = 0.65;
+  roof.position.set(hx, 5.6, hz);
+  root.add(roof);
+  addBox(hx + 3, 6.3, hz + 1.5, 0.9, 2.3, 1, 0x807b73, { outline: 0.025 });
+  // Teal door stands open into the room, leaving a clear entrance.
+  addBox(hx - 1.03, 1.65, HOME.frontZ + 1, 0.14, 3.3, 2, 0x287b78, { outline: 0.025 });
+  addBox(hx - 0.92, 1.5, HOME.frontZ + 1.6, 0.08, 0.12, 0.18, 0xd0b574, { outline: 0 });
+  addBox(hx, 3.55, HOME.frontZ - 0.7, 3.3, 0.18, 1.8, 0x36565c, { outline: 0.025 });
+  addBox(hx - 1.6, 2.75, HOME.frontZ - 0.4, 0.3, 0.4, 0.3, 0xffd899, { outline: 0.015, emissive: true });
+  const porch = new THREE.PointLight(0xffd899, 14, 10, 2);
+  porch.position.set(hx, 2.8, HOME.frontZ - 0.8);
+  root.add(porch);
+  // Low boundary walls flank the path without blocking it.
+  for (const side of [-1, 1]) addBox(hx + side * 3.8, 0.4, 42.3, 5.2, 0.8, 0.3, 0x898e87, { collide: true, outline: 0.02 });
+  addBox(hx, 0.04, 43, 2.4, 0.05, 3, 0xa6a49a, { outline: 0 });
+  addBox(hx - 3.6, 0.8, hz + 2.5, 1.6, 1.6, 0.6, 0x776f64, { collide: true, outline: 0.025 });
+  addBox(hx + 3.1, 0.7, hz + 2.8, 2, 1.4, 0.7, 0x696c70, { collide: true, outline: 0.025 });
 
   const gunPickup = new THREE.Group();
-  gunPickup.position.set(-4, 0.95, 29.4);
+  gunPickup.position.set(HOME.x, 0.95, HOME.z + 1);
   gunPickup.userData["pickupKind"] = "weapon";
   gunPickup.userData["weaponId"] = "tagger";
   gunPickup.userData["label"] = "Tagger .45";
@@ -216,10 +203,10 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
 
   // Masked street toughs: deliberately few, readable, and cheap to animate.
   const enemySpawns: [number, number, number][] = [
-    [4, 20, 0xff2e7e],
+    [11, 29, 0xff2e7e],
     [-8, -12, 0xff7a1a],
     [15, -22, 0x8b5cf6],
-    [-27, 18, 0x00e5ff],
+    [11, -28, 0x00e5ff],
   ];
   enemySpawns.forEach(([x, z, color], i) => {
     const enemy = addPerson(x, z, color, 0x0f0b1c, skinAt(i + 1), Math.PI, 1.08);
@@ -232,80 +219,12 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
 
 
   /* ---------------- Street clutter + signage ---------------- */
-  // Overhead cable runs between lamp posts
-  for (const [ax, az, bx, bz] of [
-    [8, -16, 8, 14], [-8, -6, -8, 26], [8, 14, 8, 34], [-14, 22, -30, 22],
-  ] as [number, number, number, number][]) {
-    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
-    const len = Math.hypot(bx - ax, bz - az);
-    const rot = Math.atan2(bx - ax, bz - az);
-    addBox(mx, 5.4, mz, 0.08, 0.08, len, 0x0f0b1c, { rotY: rot, outline: 0.02 });
-    for (let i = 1; i < 4; i++) {
-      const t = i / 4;
-      addBox(ax + (bx - ax) * t, 5.15, az + (bz - az) * t, 0.22, 0.36, 0.22,
-        [0xff2e7e, 0xffd400, 0x00e5ff][i % 3]!, { outline: 0.03, emissive: true });
-    }
+  // Modest street signs and drain covers instead of disconnected neon clutter.
+  for (const z of [20, 38]) {
+    addBox(-10, 1.6, z - 2, 0.12, 3.2, 0.12, 0x535d64, { outline: 0 });
+    addBox(-10, 3, z - 2, 2.2, 0.5, 0.1, 0x325457, { outline: 0.015 });
   }
-  // Bus stop shelter
-  addBox(-11.5, 1.4, -18, 0.3, 2.8, 7, 0x1c1730, { collide: true, outline: 0.06 });
-  addBox(-13.4, 2.9, -18, 4, 0.25, 7.4, 0x2b2046, { outline: 0.06 });
-  addBox(-11.4, 1.6, -18, 0.12, 2, 6, 0x00e5ff, { outline: 0, emissive: true });
-  addBox(-14.6, 0.6, -18, 1.6, 0.25, 5, 0xd9772f, { collide: true, outline: 0.05 });
-  addBox(-9.6, 1.9, -21.6, 0.6, 1.4, 0.9, 0xffd400, { outline: 0.05, emissive: true });
-  // Phone booth + post box
-  addBox(-9.4, 1.3, 4, 1.2, 2.6, 1.2, 0xff3b30, { collide: true, outline: 0.07 });
-  addBox(-9.4, 1.6, 3.35, 0.8, 1.6, 0.12, 0x9fe8ff, { outline: 0, emissive: true });
-  addBox(9.4, 0.8, -2, 1, 1.6, 1, 0xff2e7e, { collide: true, outline: 0.07 });
-  addBox(9.4, 1.68, -2, 1.2, 0.2, 1.2, 0x120e22, { outline: 0.04 });
-  // A-boards and bollards along the pavement
-  const boards: [number, number, number][] = [
-    [7.6, 12, 0x27d17c], [-7.6, 20, 0xffd400], [7.6, -20, 0x00e5ff], [-7.6, -26, 0xff7a1a],
-  ];
-  for (const [x, z, c] of boards) {
-    addBox(x, 0.7, z, 0.16, 1.4, 1.2, 0x120e22, { rotY: 0.3, collide: true, outline: 0.06 });
-    addBox(x + 0.14, 0.75, z, 0.1, 1.1, 0.9, c, { rotY: 0.3, outline: 0, emissive: true });
-  }
-  for (let i = -4; i <= 4; i++) {
-    if (i === 0) continue;
-    addBox(7, 0.45, i * 5.5, 0.22, 0.9, 0.22, 0xffd400, { outline: 0.04 });
-  }
-  // Rubbish: bin bags, crates and scattered litter
-  const bags: [number, number, number][] = [
-    [-6.8, 13.4, 0x1b1830], [-6.2, 14.4, 0x241a3d], [6.6, -6.4, 0x1b1830],
-    [6.9, -7.6, 0x241a3d], [-6.6, -14.2, 0x1b1830], [17.8, 18.4, 0x241a3d],
-  ];
-  for (const [x, z, c] of bags) {
-    addBox(x, 0.42, z, 1, 0.85, 1, c, { collide: true, outline: 0.06 });
-  }
-  const litter: [number, number, number][] = [
-    [3.4, 8.2, 0xffd400], [-3.8, -3.4, 0x27d17c], [5.2, 20.4, 0xff2e7e],
-    [-18.4, 26.2, 0x00e5ff], [-24.6, 18.8, 0xf2f2f2], [11.4, -12.6, 0xff7a1a],
-  ];
-  for (const [x, z, c] of litter) {
-    addBox(x, 0.12, z, 0.3, 0.24, 0.3, c, { outline: 0.03 });
-  }
-  // Planters with chunky foliage
-  const planters: [number, number][] = [[-14, 12], [-14, 32], [-30, 12], [12, 22]];
-  for (const [x, z] of planters) {
-    addBox(x, 0.5, z, 2, 1, 2, 0x3b3157, { collide: true, outline: 0.07 });
-    addBox(x, 1.6, z, 1.4, 1.4, 1.4, 0x27d17c, { outline: 0.07 });
-    addBox(x, 2.5, z, 0.9, 0.9, 0.9, 0x1f9e5e, { outline: 0.06 });
-  }
-  // Wet-street sheen puddles reflecting the neon
-  for (const [x, z, s] of [
-    [3, 18, 3.4], [-4, -12, 2.6], [10, 4, 3], [-20, 28, 3.8], [-2, 30, 2.4],
-  ] as [number, number, number][]) {
-    addBox(x, 0.03, z, s, 0.02, s * 0.7, 0x3a2c6c, { rotY: x * 0.3, outline: 0 });
-  }
-  // Rooftop water tanks and aerials on the near blocks
-  for (const [x, z, h] of [
-    [-30, -20, 18], [26, -28, 22], [24, 30, 16], [4, 38, 15],
-  ] as [number, number, number][]) {
-    addBox(x - 4, h + 2.6, z, 3, 3.2, 3, 0x241a3d, { outline: 0.08 });
-    addBox(x - 4, h + 4.4, z, 3.4, 0.4, 3.4, 0x120e22, { outline: 0.05 });
-    addBox(x + 5, h + 3.4, z, 0.16, 5, 0.16, 0x0f0b1c, { outline: 0.03 });
-    addBox(x + 5, h + 6, z, 0.5, 0.5, 0.5, 0xff3b30, { outline: 0, emissive: true });
-  }
+  for (const z of [8, 29, 48]) addBox(6.4, 0.045, z, 0.7, 0.015, 1.3, 0x3d4248, { outline: 0 });
 
   /* ---------------- Skyline + sky ---------------- */
   for (let i = 0; i < 26; i++) {
@@ -318,10 +237,11 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   const skyCanvas = document.createElement("canvas");
   skyCanvas.width = 4;
   skyCanvas.height = 64;
-  const ctx = skyCanvas.getContext("2d")!;
+  const ctx = skyCanvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
   const stops = ["#0b0720", "#1b1046", "#3a1a63", "#6b2270", "#a83a72", "#d8566a"];
   for (let i = 0; i < stops.length; i++) {
-    ctx.fillStyle = stops[i]!;
+    ctx.fillStyle = stops[i] ?? "#0b0720";
     ctx.fillRect(0, (i * 64) / stops.length, 4, 64 / stops.length + 1);
   }
   const skyTex = new THREE.CanvasTexture(skyCanvas);
@@ -358,7 +278,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     pickups,
     enemies,
     exits: [
-      { x: CX + 2.2, z: 12, r: 2.4, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside" },
+      { x: CX + 0.5, z: 12, r: 0.85, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside" },
     ],
     background: 0x0d0920,
     fog: { color: 0x1a1236, near: 30, far: 130 },
@@ -367,5 +287,5 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
 }
 
 function skinAt(i: number) {
-  return [0xf2c49b, 0xd79a72, 0x8d5a3b, 0x5c3a24][i % 4]!;
+  return [0xf2c49b, 0xd79a72, 0x8d5a3b, 0x5c3a24][i % 4] ?? 0xd79a72;
 }

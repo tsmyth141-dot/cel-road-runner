@@ -36,7 +36,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
       }
     }
   }
-  for (const [start, end] of [[-58, -4], [4, 16], [24, 34], [42, 58]]) {
+  for (const [start, end] of [[-58, -4], [4, 16], [24, 34], [42, 58]] as [number, number][]) {
     for (const side of [-1, 1]) {
       addBox(side * 7.2, 0.06, (start + end) / 2, 0.3, 0.12, end - start, 0x90959a, { outline: 0 });
     }
@@ -156,10 +156,13 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   }
   addBox(hx, 4.3, HOME.frontZ, 2.4, 1.8, 0.4, 0xa7aaa2, { outline: 0.02 });
   // Pitched roof (ridge runs along Z), unlike the flat-roof commercial neighbours.
-  const roof = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.4, 10.8, 3, 1), toon(0x364a52));
-  roof.rotation.set(Math.PI / 2, 0, Math.PI / 2);
-  roof.scale.y = 0.65;
-  roof.position.set(hx, 5.6, hz);
+  const roofProfile = new THREE.Shape();
+  roofProfile.moveTo(-5.5, 0);
+  roofProfile.lineTo(0, 2.2);
+  roofProfile.lineTo(5.5, 0);
+  roofProfile.closePath();
+  const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(roofProfile, { depth: 8.8, bevelEnabled: false }), toon(0x364a52));
+  roof.position.set(hx, 5.2, hz - 4.4);
   root.add(roof);
   addBox(hx + 3, 6.3, hz + 1.5, 0.9, 2.3, 1, 0x807b73, { outline: 0.025 });
   // Teal door stands open into the room, leaving a clear entrance.
@@ -170,6 +173,24 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   const porch = new THREE.PointLight(0xffd899, 14, 10, 2);
   porch.position.set(hx, 2.8, HOME.frontZ - 0.8);
   root.add(porch);
+  // Local canvas lettering stays sharp and needs no downloaded font or asset.
+  function sign(text: string, x: number, y: number, z: number, width: number, yaw = 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 128;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.fillStyle = '#192d30'; context.fillRect(0, 0, 512, 128);
+    context.strokeStyle = '#abbcae'; context.lineWidth = 8; context.strokeRect(8, 8, 496, 112);
+    context.fillStyle = '#e8e7d6'; context.font = 'bold 52px sans-serif';
+    context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText(text, 256, 64);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 4), new THREE.MeshBasicMaterial({ map: texture }));
+    mesh.position.set(x, y, z); mesh.rotation.y = yaw; root.add(mesh);
+  }
+  sign('17 · HOME', hx + 1.85, 3.4, HOME.frontZ - 0.24, 2.3, Math.PI);
+  sign('THE VELVET CAN', -16.8, 5.5, 12, 4.8, Math.PI / 2);
+  sign('CANAL STREET', -10, 3, 18.06, 2.15);
   // Low boundary walls flank the path without blocking it.
   for (const side of [-1, 1]) addBox(hx + side * 3.8, 0.4, 42.3, 5.2, 0.8, 0.3, 0x898e87, { collide: true, outline: 0.02 });
   addBox(hx, 0.04, 43, 2.4, 0.05, 3, 0xa6a49a, { outline: 0 });

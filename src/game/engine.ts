@@ -5,6 +5,7 @@ import { buildCity } from "./city";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
 import { movementIntent } from "./controls";
+import { groundedIdleHeight } from "./neighbourhood";
 import {
   CLUB_INTRO,
   lineAt,
@@ -461,7 +462,7 @@ export function createEngine(
         }
       } else {
         // Never lift/roll the entire person: that moves both feet off the pavement.
-        p.position.y = 0;
+        p.position.y = groundedIdleHeight();
         p.rotation.z = 0;
       }
     }

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { makeBuilder, type LevelResult } from "./world";
-import { CLUB_STREET_DOOR, HOME, groundedIdleHeight } from "./neighbourhood";
+import { CLUB_STREET_DOOR, HOME, STREET_WITNESS, groundedIdleHeight } from "./neighbourhood";
 
 const BOUND = 58;
 
@@ -36,7 +36,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
       }
     }
   }
-  for (const [start, end] of [[-58, -4], [4, 16], [24, 34], [42, 58]]) {
+  for (const [start, end] of [[-58, -4], [4, 16], [24, 34], [42, 58]] as [number, number][]) {
     for (const side of [-1, 1]) {
       addBox(side * 7.2, 0.06, (start + end) / 2, 0.3, 0.12, end - start, 0x90959a, { outline: 0 });
     }
@@ -73,14 +73,10 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
 
   /* ---------------- Club: recessed, open metal doorway ---------------- */
   const CX = CLUB_STREET_DOOR.x;
-  addBox(-26, 9, 12, 18, 18, 16, 0x51415b, { outline: 0.045 });
   // Collision is split around the passage, not a solid box behind a painted door.
   colliders.push({ minX: -35, maxX: -17, minZ: 4, maxZ: 10.2 });
   colliders.push({ minX: -35, maxX: -17, minZ: 13.8, maxZ: 20 });
   colliders.push({ minX: -35, maxX: -20, minZ: 10.2, maxZ: 13.8 });
-  // Hide the solid facade at ground level with an actual shell instead.
-  const clubMass = root.children[root.children.length - 1];
-  if (clubMass) root.remove(clubMass);
   addBox(-26, 11.5, 12, 18, 13, 16, 0x51415b, { outline: 0.045 });
   addBox(-26, 2.5, 7.1, 18, 5, 6.2, 0x51415b, { outline: 0.035 });
   addBox(-26, 2.5, 16.9, 18, 5, 6.2, 0x51415b, { outline: 0.035 });
@@ -132,15 +128,12 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     addBox(x, 0.55, z - 2.4 * Math.cos(r), 1.8, 0.4, 0.3, 0xff3b30, { rotY: r, outline: 0, emissive: true });
   }
 
-  // Residents stand on the pavement, not in traffic or inside buildings.
-  const walkers: [number, number, number, number][] = [
-    [-11, 8, 0x75879b, 1.5], [11, 14, 0x8b7261, -1.5],
-    [-11, 29, 0x6f8d7c, 0.4], [11, 44, 0x8f6d80, 2.2],
-  ];
-  walkers.forEach(([x, z, c, r], i) => {
-    const person = addPerson(x, z, c, 0x282d39, skinAt(i), r, 1);
-    person.position.y = groundedIdleHeight();
-  });
+  // One non-hostile witness, beside his belongings, away from the doorway.
+  const witness = addPerson(STREET_WITNESS.x, STREET_WITNESS.z, 0x6d796e, 0x454650, 0xc29577, Math.PI / 2, 0.95);
+  witness.position.y = groundedIdleHeight();
+  witness.name = 'street-witness';
+  addBox(STREET_WITNESS.x - 0.4, 0.18, STREET_WITNESS.z + 1.4, 1.3, 0.35, 0.75, 0x73685b, { outline: 0.02 });
+  addBox(STREET_WITNESS.x + 0.8, 0.07, STREET_WITNESS.z + 0.4, 0.25, 0.14, 0.25, 0xa8a6a0, { outline: 0.01 });
 
   /* ---------------- No. 17: your own recognisable house ---------------- */
   const hx = HOME.x, hz = HOME.z;
@@ -156,10 +149,13 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   }
   addBox(hx, 4.3, HOME.frontZ, 2.4, 1.8, 0.4, 0xa7aaa2, { outline: 0.02 });
   // Pitched roof (ridge runs along Z), unlike the flat-roof commercial neighbours.
-  const roof = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.4, 10.8, 3, 1), toon(0x364a52));
-  roof.rotation.set(Math.PI / 2, 0, Math.PI / 2);
-  roof.scale.y = 0.65;
-  roof.position.set(hx, 5.6, hz);
+  const roofProfile = new THREE.Shape();
+  roofProfile.moveTo(-5.5, 0);
+  roofProfile.lineTo(0, 2.2);
+  roofProfile.lineTo(5.5, 0);
+  roofProfile.closePath();
+  const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(roofProfile, { depth: 8.8, bevelEnabled: false }), toon(0x364a52));
+  roof.position.set(hx, 5.2, hz - 4.4);
   root.add(roof);
   addBox(hx + 3, 6.3, hz + 1.5, 0.9, 2.3, 1, 0x807b73, { outline: 0.025 });
   // Teal door stands open into the room, leaving a clear entrance.
@@ -170,53 +166,29 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   const porch = new THREE.PointLight(0xffd899, 14, 10, 2);
   porch.position.set(hx, 2.8, HOME.frontZ - 0.8);
   root.add(porch);
+  // Local canvas lettering stays sharp and needs no downloaded font or asset.
+  function sign(text: string, x: number, y: number, z: number, width: number, yaw = 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 128;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.fillStyle = '#192d30'; context.fillRect(0, 0, 512, 128);
+    context.strokeStyle = '#abbcae'; context.lineWidth = 8; context.strokeRect(8, 8, 496, 112);
+    context.fillStyle = '#e8e7d6'; context.font = 'bold 52px sans-serif';
+    context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText(text, 256, 64);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 4), new THREE.MeshBasicMaterial({ map: texture }));
+    mesh.position.set(x, y, z); mesh.rotation.y = yaw; root.add(mesh);
+  }
+  sign('17 · HOME', hx + 1.85, 3.4, HOME.frontZ - 0.24, 2.3, Math.PI);
+  sign('THE VELVET CAN', -16.8, 5.5, 12, 4.8, Math.PI / 2);
+  sign('CANAL STREET', -10, 3, 18.06, 2.15);
   // Low boundary walls flank the path without blocking it.
   for (const side of [-1, 1]) addBox(hx + side * 3.8, 0.4, 42.3, 5.2, 0.8, 0.3, 0x898e87, { collide: true, outline: 0.02 });
   addBox(hx, 0.04, 43, 2.4, 0.05, 3, 0xa6a49a, { outline: 0 });
   addBox(hx - 3.6, 0.8, hz + 2.5, 1.6, 1.6, 0.6, 0x776f64, { collide: true, outline: 0.025 });
   addBox(hx + 3.1, 0.7, hz + 2.8, 2, 1.4, 0.7, 0x696c70, { collide: true, outline: 0.025 });
-
-  const gunPickup = new THREE.Group();
-  gunPickup.position.set(HOME.x, 0.95, HOME.z + 1);
-  gunPickup.userData["pickupKind"] = "weapon";
-  gunPickup.userData["weaponId"] = "tagger";
-  gunPickup.userData["label"] = "Tagger .45";
-  addBox(0, 0, 0, 0.35, 0.28, 1.1, 0x5b4bd6, { parent: gunPickup, outline: 0.06 });
-  addBox(0, -0.32, 0.25, 0.28, 0.55, 0.3, 0xff2e7e, { parent: gunPickup, outline: 0.05 });
-  addBox(0, 0.18, -0.48, 0.24, 0.18, 0.22, 0xffd400, { parent: gunPickup, outline: 0.03, emissive: true });
-  root.add(gunPickup);
-  pickups.push(gunPickup);
-  spin.push(gunPickup);
-
-  // Health cans reward exploring the square and bus shelter.
-  for (const [x, z] of [[-15, -18], [-29, 25]] as [number, number][]) {
-    const can = new THREE.Group();
-    can.position.set(x, 0.8, z);
-    can.userData["pickupKind"] = "health";
-    can.userData["label"] = "Fizz Can";
-    addBox(0, 0, 0, 0.42, 0.85, 0.42, 0x27d17c, { parent: can, outline: 0.05, emissive: true });
-    addBox(0, 0.46, 0, 0.34, 0.08, 0.34, 0xf2f2f2, { parent: can, outline: 0.03 });
-    root.add(can);
-    pickups.push(can);
-    spin.push(can);
-  }
-
-  // Masked street toughs: deliberately few, readable, and cheap to animate.
-  const enemySpawns: [number, number, number][] = [
-    [11, 29, 0xff2e7e],
-    [-8, -12, 0xff7a1a],
-    [15, -22, 0x8b5cf6],
-    [11, -28, 0x00e5ff],
-  ];
-  enemySpawns.forEach(([x, z, color], i) => {
-    const enemy = addPerson(x, z, color, 0x0f0b1c, skinAt(i + 1), Math.PI, 1.08);
-    enemy.userData["enemy"] = true;
-    enemy.traverse((part) => { part.userData["enemyRoot"] = enemy; });
-    addBox(0.17, 2.08, -0.27, 0.58, 0.18, 0.08, 0x0f0b1c, { parent: enemy, outline: 0.03 });
-    addBox(-0.52, 1.34, 0, 0.18, 0.9, 0.2, 0xffd400, { parent: enemy, outline: 0.04 });
-    enemies.push({ root: enemy, health: 60, speed: 1.65 + i * 0.08, damage: 10, attackCooldown: 0 });
-  });
-
 
   /* ---------------- Street clutter + signage ---------------- */
   // Modest street signs and drain covers instead of disconnected neon clutter.

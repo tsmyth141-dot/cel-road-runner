@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Remove current gun/health pickups and outdoor enemies; keep one homeless witness up the road with optional dialogue offering information for money (no payment or reveal until authored).
+
 - [ ] Replace wall-like club exits with open doorways, tighten Canal Street into two readable blocks, ground pedestrians, and provide a distinctive reachable home.
 
 - [x] Correct bartender proportions and remove pink arm-like towel; clarify traditional WASD; remove booth replay and add optional bartender conversation.
@@ -10,6 +12,4 @@
 - [x] Upgrade the opening bartender with a distinctive detailed model and restrained idle animation.
 - [x] Finish and verify the drinks-booth interaction and follow-up scripted moment.
 - [ ] Build the first chapter gameplay area outside the club.
-- [ ] Add chapter-specific pickups and lightweight enemies.
-- [ ] Place the first gun as a story-appropriate unlock and make it playable.
-- [ ] Verify the full flow from club cutscene to outside combat on Chromebook-friendly settings.
+- [x] Defer chapter pickups, guns, and combat at the user's request.

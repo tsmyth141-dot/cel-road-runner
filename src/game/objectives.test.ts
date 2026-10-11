@@ -12,7 +12,10 @@ describe("chapter one objectives", () => {
   test("leaving the club stays complete after returning", () => {
     strictEqual(chapterObjectives("club", ["ch1-left-club"], false)[0]?.complete, true);
   });
-  test("the house weapon completes the home objective", () => {
-    deepStrictEqual(chapterObjectives("city", [], true).map((o) => o.complete), [true, true]);
+  test("arriving home completes the home objective without a weapon", () => {
+    deepStrictEqual(chapterObjectives("city", ['ch1-home-arrived'], false).map((o) => o.complete), [true, true]);
+  });
+  test("an old gun unlock does not imply arrival at the new home", () => {
+    strictEqual(chapterObjectives('city', [], true)[1]?.complete, false);
   });
 });

@@ -6,7 +6,7 @@ import { chapterObjectives } from "@/game/objectives";
 import { Button } from "@/components/ui/button";
 import { Check, Circle, ArrowRight } from "lucide-react";
 import { MovementControls } from "./MovementControls";
-import { BARTENDER_CHOICES } from "@/game/dialogue";
+import { BARTENDER_CHOICES, WITNESS_CHOICES } from "@/game/dialogue";
 
 type Props = {
   start: Pick<SaveData, "position" | "yaw" | "chapter" | "unlocked" | "weapon" | "zone" | "storyFlags">;
@@ -32,6 +32,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [hasStartedWalking, setHasStartedWalking] = useState(!intro);
   const [talking, setTalking] = useState(false);
+  const [speaker, setSpeaker] = useState<'bartender' | 'witness'>('bartender');
   const [reply, setReply] = useState<string | null>(null);
   const objectives = chapterObjectives(loadout.zone, loadout.storyFlags, loadout.unlocked.includes("tagger"));
   const [cut, setCut] = useState<CutsceneState>({
@@ -59,8 +60,9 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       },
       {
         playIntro: intro,
-        onConversation: (active) => {
+        onConversation: (active, nextSpeaker) => {
           setTalking(active);
+          if (nextSpeaker) setSpeaker(nextSpeaker);
           setReply(null);
         },
         onCutscene: (state) => {
@@ -125,7 +127,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
               style={{ width: `${(loadout.health / loadout.maxHealth) * 100}%` }}
             />
           </div>
-          {loadout.zone === "city" && (
+          {loadout.zone === "city" && loadout.enemies > 0 && (
             <p className="mt-2 font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
               Threats nearby · {loadout.enemies}
             </p>
@@ -249,11 +251,11 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
 
       {talking && (
         <div className="absolute inset-0 flex items-end justify-center bg-background/20 p-4 pb-16 sm:pb-24">
-          <section role="dialog" aria-modal="true" aria-label="Talk to bartender" className="w-full max-w-xl rounded-md border border-secondary/60 bg-background/95 p-5 shadow-tag">
-            <p className="font-display text-lg text-secondary">Bartender</p>
-            <p aria-live="polite" className="my-3 text-sm leading-relaxed text-foreground">{reply ?? "You all right? Anything you need to ask before you go?"}</p>
+          <section role="dialog" aria-modal="true" aria-label={speaker === 'bartender' ? 'Talk to bartender' : 'Talk to the man'} className="w-full max-w-xl rounded-md border border-secondary/60 bg-background/95 p-5 shadow-tag">
+            <p className="font-display text-lg text-secondary">{speaker === 'bartender' ? 'Bartender' : 'Man on Canal Street'}</p>
+            <p aria-live="polite" className="my-3 text-sm leading-relaxed text-foreground">{reply ?? (speaker === 'bartender' ? "You all right? Anything you need to ask before you go?" : "You were in that club last night, weren’t you? Spare me some money and I’ll tell you what I know about what happened to you.")}</p>
             <div className="flex flex-col gap-2">
-              {BARTENDER_CHOICES.map((choice) => (
+              {(speaker === 'bartender' ? BARTENDER_CHOICES : WITNESS_CHOICES).map((choice) => (
                 <Button key={choice.id} variant="ghost" className="h-auto justify-start whitespace-normal border-l-2 border-secondary/40 px-3 py-2 text-left text-foreground" onClick={() => setReply(choice.answer)}>{choice.question}</Button>
               ))}
               <Button variant="secondary" className="mt-2 self-start" onClick={() => engineRef.current?.closeConversation()}>I’ll be going <ArrowRight /></Button>

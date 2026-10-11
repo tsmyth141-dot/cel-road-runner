@@ -5,7 +5,7 @@ import { buildCity } from "./city";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
 import { movementIntent } from "./controls";
-import { groundedIdleHeight } from "./neighbourhood";
+import { groundedIdleHeight, HOME, STREET_WITNESS } from "./neighbourhood";
 import {
   CLUB_INTRO,
   lineAt,
@@ -72,7 +72,7 @@ export function createEngine(
   options: {
     playIntro?: boolean;
     onCutscene?: (state: CutsceneState) => void;
-    onConversation?: (active: boolean) => void;
+    onConversation?: (active: boolean, speaker?: 'bartender' | 'witness') => void;
   } = {},
 ): EngineHandle {
   const onCutscene = options.onCutscene ?? (() => {});
@@ -256,7 +256,7 @@ export function createEngine(
       conversation = true;
       keys.clear();
       velocity.set(0, 0);
-      options.onConversation?.(true);
+      options.onConversation?.(true, zone === 'club' ? 'bartender' : 'witness');
       document.exitPointerLock();
       return;
     }
@@ -535,6 +535,13 @@ export function createEngine(
       const dz = player.z - 5.6;
       bartenderInRange = dx * dx + dz * dz < 3.6 * 3.6;
       if (bartenderInRange) nearPrompt = "E · Talk to bartender";
+    }
+    if (!cutscene && !conversation && zone === 'city') {
+      bartenderInRange = Math.hypot(player.x - STREET_WITNESS.x, player.z - STREET_WITNESS.z) < 3;
+      if (bartenderInRange) nearPrompt = 'E · Talk to the man';
+      if (!storyFlags.has('ch1-home-arrived') && Math.abs(player.x - HOME.x) < 3 && player.z > HOME.frontZ + 1 && player.z < HOME.z + 3) {
+        storyFlags.add('ch1-home-arrived'); persist(); emitLoadout();
+      }
     }
     for (const ex of level.exits) {
       const dx = ex.x - player.x;

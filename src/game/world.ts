@@ -11,6 +11,8 @@ export type Exit = {
   spawn: [number, number];
   yaw: number;
   label: string;
+  /** Hinge pivots that swing open (userData.openYaw) as the player approaches. */
+  doors?: THREE.Object3D[];
 };
 
 export type Animated = {

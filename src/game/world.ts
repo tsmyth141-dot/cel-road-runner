@@ -313,7 +313,38 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     return g;
   }
 
-  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson, addBartender };
+  /**
+   * A hinged door leaf in an X-facing wall. The leaf extends from the hinge
+   * along +Z (dir 1) or -Z (dir -1); the engine swings it to userData.openYaw.
+   */
+  function addSwingDoor(
+    hingeX: number,
+    hingeZ: number,
+    width: number,
+    height: number,
+    color: number,
+    dir: 1 | -1,
+    openYaw: number,
+    windowColor = 0x8fa3a0,
+  ) {
+    const pivot = new THREE.Group();
+    pivot.position.set(hingeX, 0, hingeZ);
+    const mid = (dir * width) / 2;
+    addBox(0, height / 2, mid, 0.12, height - 0.04, width - 0.04, color, { outline: 0.02, parent: pivot });
+    // Recessed panels, a wired-glass vision window and a push bar on both faces.
+    for (const side of [-1, 1]) {
+      addBox(side * 0.07, height * 0.3, mid, 0.02, height * 0.36, width * 0.68, 0x1d2a2a, { outline: 0, parent: pivot });
+      addBox(side * 0.07, height * 0.72, mid, 0.02, height * 0.24, width * 0.42, windowColor, { outline: 0, emissive: true, parent: pivot });
+      addBox(side * 0.13, height * 0.47, mid, 0.06, 0.08, width * 0.78, 0xb6c3b6, { outline: 0, parent: pivot });
+    }
+    addBox(0, height * 0.47, dir * (width - 0.12), 0.16, 0.16, 0.08, 0x8d978f, { outline: 0, parent: pivot });
+    pivot.userData['openYaw'] = openYaw;
+    pivot.userData['open'] = 0;
+    root.add(pivot);
+    return pivot;
+  }
+
+  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson, addBartender, addSwingDoor };
 }
 
 /* ---------------- First-person viewmodel ---------------- */

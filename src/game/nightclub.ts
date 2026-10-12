@@ -35,7 +35,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   for (const [x, z, w, d] of [
     [0, -ROOM_Z + 0.6, ROOM_X * 2 - 2, 0.2],
     [0, ROOM_Z - 0.6, ROOM_X * 2 - 2, 0.2],
-    [-ROOM_X + 0.6, 0, 0.2, ROOM_Z * 2 - 2],
+    [-ROOM_X + 0.6, -1.4, 0.2, 27.6], // stops before the exit door
     [ROOM_X - 0.6, 0, 0.2, ROOM_Z * 2 - 2],
   ] as [number, number, number, number][]) {
     addBox(x, 0.18, z, w, 0.16, d, 0xff2e7e, { outline: 0, emissive: true });
@@ -63,9 +63,10 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     }
   }
   // Quiet wall panelling behind the booths; let the furniture and the bartender carry the scene.
-  for (const az of [-11, -4, 4, 11]) {
-    addBox(-21.32, 2.7, az, 0.12, 3.6, 5.8, 0x2b2939, { outline: 0 });
-    addBox(-21.22, 1.08, az, 0.13, 0.13, 5.8, 0x70534c, { outline: 0 });
+  // The last panel stops short of the exit so nothing covers the door frame.
+  for (const [az, len] of [[-11, 5.8], [-4, 5.8], [4, 5.8], [9.6, 4.8]] as [number, number][]) {
+    addBox(-21.32, 2.7, az, 0.12, 3.6, len, 0x2b2939, { outline: 0 });
+    addBox(-21.22, 1.08, az, 0.13, 0.13, len, 0x70534c, { outline: 0 });
   }
   // Hanging banners high on the back wall
   for (let i = 0; i < 5; i++) {
@@ -334,7 +335,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     pickups,
     enemies: [],
     exits: [
-      { ...CLUB_INNER_DOOR, r: 0.75, to: "city", spawn: CLUB_STREET_SPAWN, yaw: Math.PI, label: "Step outside" },
+      { ...CLUB_INNER_DOOR, r: 1, to: "city", spawn: CLUB_STREET_SPAWN, yaw: Math.PI, label: "Step outside", doors: clubDoors },
     ],
     background: 0x120c22,
     fog: { color: 0x120c22, near: 12, far: 48 },

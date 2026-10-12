@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Rebuild both club exit doors as real framed doors that swing open; remove floating street objects; rebuild the first-person hand.
+
+
 - [x] Remove current gun/health pickups and outdoor enemies; keep one homeless witness up the road with optional dialogue offering information for money (no payment or reveal until authored).
 
 - [x] Replace wall-like club exits with open doorways, tighten Canal Street into two readable blocks, ground pedestrians, and provide a distinctive reachable home.

@@ -11,6 +11,8 @@ export type Exit = {
   spawn: [number, number];
   yaw: number;
   label: string;
+  /** Hinge pivots that swing open (userData.openYaw) as the player approaches. */
+  doors?: THREE.Object3D[];
 };
 
 export type Animated = {
@@ -311,7 +313,38 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     return g;
   }
 
-  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson, addBartender };
+  /**
+   * A hinged door leaf in an X-facing wall. The leaf extends from the hinge
+   * along +Z (dir 1) or -Z (dir -1); the engine swings it to userData.openYaw.
+   */
+  function addSwingDoor(
+    hingeX: number,
+    hingeZ: number,
+    width: number,
+    height: number,
+    color: number,
+    dir: 1 | -1,
+    openYaw: number,
+    windowColor = 0x8fa3a0,
+  ) {
+    const pivot = new THREE.Group();
+    pivot.position.set(hingeX, 0, hingeZ);
+    const mid = (dir * width) / 2;
+    addBox(0, height / 2, mid, 0.12, height - 0.04, width - 0.04, color, { outline: 0.02, parent: pivot });
+    // Recessed panels, a wired-glass vision window and a push bar on both faces.
+    for (const side of [-1, 1]) {
+      addBox(side * 0.07, height * 0.3, mid, 0.02, height * 0.36, width * 0.68, 0x1d2a2a, { outline: 0, parent: pivot });
+      addBox(side * 0.07, height * 0.72, mid, 0.02, height * 0.24, width * 0.42, windowColor, { outline: 0, emissive: true, parent: pivot });
+      addBox(side * 0.13, height * 0.47, mid, 0.06, 0.08, width * 0.78, 0xb6c3b6, { outline: 0, parent: pivot });
+    }
+    addBox(0, height * 0.47, dir * (width - 0.12), 0.16, 0.16, 0.08, 0x8d978f, { outline: 0, parent: pivot });
+    pivot.userData['openYaw'] = openYaw;
+    pivot.userData['open'] = 0;
+    root.add(pivot);
+    return pivot;
+  }
+
+  return { root, colliders, spin, flicker, bob, toon, glow, boxGeo, addBox, addPerson, addBartender, addSwingDoor };
 }
 
 /* ---------------- First-person viewmodel ---------------- */
@@ -333,7 +366,8 @@ export function buildViewModel(
     color: number,
     pos: [number, number, number],
     rot: [number, number, number] = [0, 0, 0],
-    outline = 0.012,
+    outline = 0.006,
+    parent: THREE.Object3D = g,
   ) => {
     const wrap = new THREE.Group();
     const m = new THREE.Mesh(box, toon(color));
@@ -347,26 +381,49 @@ export function buildViewModel(
     }
     wrap.position.set(...pos);
     wrap.rotation.set(...rot);
-    g.add(wrap);
+    parent.add(wrap);
     return wrap;
   };
 
+  const SKIN = 0xd9a07a;
+  const SKIN_SHADE = 0xb98060;
+  const SLEEVE = 0x2b2a36;
+  const TAPE = palette.kind === "fists" ? palette.accent : 0xe9e4d8;
+
+  /**
+   * One connected right arm: sleeve -> forearm -> wrapped wrist -> clenched fist.
+   * Every piece shares the arm's axis (forearm runs toward the camera on +Z),
+   * so nothing floats or kinks, and finger outlines stay fine enough to read.
+   */
+  const addArm = (pos: [number, number, number], rot: [number, number, number]) => {
+    const arm = new THREE.Group();
+    arm.position.set(...pos);
+    arm.rotation.set(...rot);
+    g.add(arm);
+    part(0.17, 0.16, 0.22, SLEEVE, [0, -0.005, 0.26], [0, 0, 0], 0.007, arm); // jacket sleeve
+    part(0.175, 0.04, 0.035, 0x46424f, [0, -0.005, 0.15], [0, 0, 0], 0.004, arm); // sleeve cuff
+    part(0.105, 0.095, 0.2, SKIN, [0, 0, 0.06], [0, 0, 0], 0.006, arm); // forearm
+    part(0.112, 0.102, 0.05, TAPE, [0, 0, -0.03], [0, 0, 0], 0.004, arm); // wrist wrap
+    part(0.125, 0.09, 0.09, SKIN, [0, 0.004, -0.095], [0, 0, 0], 0.006, arm); // back of hand
+    for (let i = 0; i < 4; i++) {
+      // Curled fingers: a row of knuckles folding down into the palm.
+      part(0.029, 0.08, 0.05, i % 2 ? SKIN : SKIN_SHADE, [-0.045 + i * 0.03, -0.004, -0.162], [0, 0, 0], 0.0025, arm);
+    }
+    part(0.128, 0.024, 0.036, TAPE, [0, 0.03, -0.165], [0, 0, 0], 0.0025, arm); // knuckle tape
+    part(0.04, 0.034, 0.08, SKIN_SHADE, [-0.058, -0.036, -0.13], [0, 0.55, 0], 0.003, arm); // thumb
+    return arm;
+  };
+
   if (palette.kind === "fists") {
-    // Bare hands: taped-up brawler fists, no weapon yet.
-    part(0.14, 0.13, 0.16, palette.body, [0, -0.06, -0.18], [0.18, 0, 0.08]); // fist
-    part(0.145, 0.035, 0.05, palette.accent, [0, 0.0, -0.24], [0.18, 0, 0.08]); // knuckle tape
-    part(0.145, 0.035, 0.05, palette.accent, [0, -0.06, -0.24], [0.18, 0, 0.08]); // knuckle tape
-    part(0.11, 0.11, 0.26, 0xf2c49b, [0.03, -0.15, 0.02], [0.3, 0, 0.12]); // forearm
-    part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.2, 0.14], [0.3, 0, 0.12]); // cuff
+    // Bare, taped brawler's fist held low and to the right, knuckles forward.
+    addArm([0.02, -0.1, 0], [0.55, -0.02, 0.18]);
   } else {
-    // Blocky stylised firearm
+    // Blocky stylised firearm gripped by the same connected arm.
     part(0.09, 0.11, 0.34, palette.body, [0, 0, -0.16]); // slide
     part(0.075, 0.09, 0.16, palette.accent, [0, -0.02, -0.34]); // muzzle block
     part(0.07, 0.16, 0.09, 0x3b2f66, [0, -0.13, -0.02], [0.25, 0, 0]); // grip
-    part(0.05, 0.03, 0.1, 0xffd400, [0, 0.07, -0.2], [0, 0, 0], 0.008); // sight rail
-    part(0.13, 0.13, 0.15, 0x27d17c, [0.01, -0.15, 0.02], [0.15, 0, 0.1]); // fist
-    part(0.11, 0.11, 0.3, 0xf2c49b, [0.03, -0.22, 0.2], [0.3, 0, 0.12]); // forearm
-    part(0.13, 0.13, 0.08, 0x6b3fd4, [0.04, -0.25, 0.33], [0.3, 0, 0.12]); // cuff
+    part(0.05, 0.03, 0.1, 0xffd400, [0, 0.07, -0.2], [0, 0, 0], 0.004); // sight rail
+    addArm([0, -0.16, 0.16], [0.2, 0, 0.04]);
   }
 
   g.position.set(0.21, -0.16, -0.5);

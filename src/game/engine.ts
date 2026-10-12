@@ -543,6 +543,17 @@ export function createEngine(
         storyFlags.add('ch1-home-arrived'); persist(); emitLoadout();
       }
     }
+    // Doors swing open as you walk up to them and close again behind you.
+    const doorEase = 1 - Math.exp(-5 * dt);
+    for (const ex of level.exits) {
+      if (!ex.doors) continue;
+      const target = Math.hypot(ex.x - player.x, ex.z - player.z) < 4.2 ? 1 : 0;
+      for (const d of ex.doors) {
+        const open = ((d.userData['open'] as number) ?? 0) + (target - ((d.userData['open'] as number) ?? 0)) * doorEase;
+        d.userData['open'] = open;
+        d.rotation.y = ((d.userData['openYaw'] as number) ?? 0) * open;
+      }
+    }
     for (const ex of level.exits) {
       const dx = ex.x - player.x;
       const dz = ex.z - player.z;

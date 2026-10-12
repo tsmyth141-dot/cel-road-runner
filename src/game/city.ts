@@ -71,23 +71,38 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     addBox(faceX, 0.5, z - d / 2 + 0.2, 0.15, 1, 0.3, 0xb5aaa0, { outline: 0 });
   });
 
-  /* ---------------- Club: recessed, open metal doorway ---------------- */
+  /* ---------------- Club: recessed entrance with real double doors ---------------- */
   const CX = CLUB_STREET_DOOR.x;
-  // Collision is split around the passage, not a solid box behind a painted door.
+  const DOOR_BACK_X = -19.9;
+  // Collision is split around the recess; the doors at the back are the only way in.
   colliders.push({ minX: -35, maxX: -17, minZ: 4, maxZ: 10.2 });
   colliders.push({ minX: -35, maxX: -17, minZ: 13.8, maxZ: 20 });
-  colliders.push({ minX: -35, maxX: -20, minZ: 10.2, maxZ: 13.8 });
+  colliders.push({ minX: -35, maxX: DOOR_BACK_X + 0.05, minZ: 10.2, maxZ: 13.8 });
   addBox(-26, 11.5, 12, 18, 13, 16, 0x51415b, { outline: 0.045 });
   addBox(-26, 2.5, 7.1, 18, 5, 6.2, 0x51415b, { outline: 0.035 });
   addBox(-26, 2.5, 16.9, 18, 5, 6.2, 0x51415b, { outline: 0.035 });
-  addBox(-20, 2.4, 12, 0.15, 4.8, 3.6, 0x13151e, { outline: 0 });
-  for (const z of [10.2, 13.8]) addBox(CX + 0.08, 2.35, z, 0.25, 4.7, 0.22, 0x9ca8a5, { outline: 0.02 });
-  addBox(CX + 0.08, 4.7, 12, 0.25, 0.22, 3.8, 0x9ca8a5, { outline: 0.02 });
-  addBox(-15.5, 2.2, 13.72, 3, 4.4, 0.15, 0x31584a, { outline: 0.02 });
-  addBox(-15.3, 2.1, 13.59, 2.1, 0.09, 0.08, 0xb1bdb5, { outline: 0 });
-  addBox(-17, 5.5, 12, 0.15, 0.65, 5.1, 0x19251f, { outline: 0.025 });
-  const clubLight = new THREE.PointLight(0x75b695, 18, 12, 2);
-  clubLight.position.set(-14.8, 4, 12);
+  // Steel frame at the street edge, worn step and transom over the doors.
+  for (const z of [10.2, 13.8]) addBox(CX + 0.08, 2.5, z, 0.3, 5, 0.25, 0x6f7a78, { outline: 0.02 });
+  addBox(CX + 0.08, 4.9, 12, 0.3, 0.25, 3.85, 0x6f7a78, { outline: 0.02 });
+  addBox((CX + DOOR_BACK_X) / 2, 0.06, 12, CX - DOOR_BACK_X, 0.12, 3.6, 0x5a5650, { outline: 0.015 });
+  addBox(DOOR_BACK_X, 4.6, 12, 0.3, 0.8, 3.6, 0x3a3540, { outline: 0.02 });
+  for (const z of [10.3, 13.7]) addBox(DOOR_BACK_X, 2.1, z, 0.34, 4.2, 0.2, 0x4c5854, { outline: 0.02 });
+  const clubDoors = [
+    addSwingDoor(DOOR_BACK_X, 10.42, 1.58, 4.1, 0x31584a, 1, 1.45, 0xb98a7c),
+    addSwingDoor(DOOR_BACK_X, 13.58, 1.58, 4.1, 0x31584a, -1, -1.45, 0xb98a7c),
+  ];
+  // Dim red lobby is visible once the doors open.
+  addBox(-21.6, 0.03, 12, 3.4, 0.06, 3.6, 0x2a2140, { outline: 0 });
+  addBox(-23.3, 2.1, 12, 0.2, 4.2, 3.6, 0x352a55, { outline: 0 });
+  addBox(-21.6, 4.25, 12, 3.4, 0.1, 3.6, 0x191231, { outline: 0 });
+  addBox(-23.15, 2.4, 12, 0.08, 1.6, 1.2, 0xff2e7e, { outline: 0, emissive: true });
+  const lobby = new THREE.PointLight(0xff4f8f, 6, 5, 2);
+  lobby.position.set(-21.8, 3, 12);
+  root.add(lobby);
+  // Small caged lamp over the doorway lights the recess without a glowing slab.
+  addBox(CX - 0.6, 4.55, 12, 0.35, 0.3, 0.35, 0xffe2a8, { outline: 0.015, emissive: true });
+  const clubLight = new THREE.PointLight(0xffd2a0, 14, 10, 2);
+  clubLight.position.set(-16, 4.2, 12);
   root.add(clubLight);
 
   /* ---------------- Street furniture ---------------- */

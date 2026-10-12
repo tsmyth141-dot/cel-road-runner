@@ -400,7 +400,7 @@ export function buildViewModel(
     arm.position.set(...pos);
     arm.rotation.set(...rot);
     g.add(arm);
-    part(0.17, 0.16, 0.3, SLEEVE, [0, -0.005, 0.3], [0, 0, 0], 0.007, arm); // jacket sleeve
+    part(0.17, 0.16, 0.22, SLEEVE, [0, -0.005, 0.26], [0, 0, 0], 0.007, arm); // jacket sleeve
     part(0.175, 0.04, 0.035, 0x46424f, [0, -0.005, 0.15], [0, 0, 0], 0.004, arm); // sleeve cuff
     part(0.105, 0.095, 0.2, SKIN, [0, 0, 0.06], [0, 0, 0], 0.006, arm); // forearm
     part(0.112, 0.102, 0.05, TAPE, [0, 0, -0.03], [0, 0, 0], 0.004, arm); // wrist wrap
@@ -416,7 +416,7 @@ export function buildViewModel(
 
   if (palette.kind === "fists") {
     // Bare, taped brawler's fist held low and to the right, knuckles forward.
-    addArm([0.02, -0.11, 0], [0.16, 0.06, 0.12]);
+    addArm([0.02, -0.1, 0], [0.55, -0.02, 0.18]);
   } else {
     // Blocky stylised firearm gripped by the same connected arm.
     part(0.09, 0.11, 0.34, palette.body, [0, 0, -0.16]); // slide

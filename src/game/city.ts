@@ -6,7 +6,7 @@ const BOUND = 58;
 
 /** Night-time street block outside the club: town square, shopfronts, traffic, pedestrians. */
 export function buildCity(gradient: THREE.DataTexture): LevelResult {
-  const { root, colliders, spin, flicker, bob, toon, glow, addBox, addPerson } =
+  const { root, colliders, spin, flicker, bob, toon, glow, addBox, addPerson, addSwingDoor } =
     makeBuilder(gradient);
   const floorTiles: THREE.Mesh[] = [];
   const pickups: THREE.Object3D[] = [];
@@ -20,11 +20,11 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   ]), 2, 2, THREE.RGBAFormat);
   pavementTexture.colorSpace = THREE.SRGBColorSpace;
   pavementTexture.wrapS = pavementTexture.wrapT = THREE.RepeatWrapping;
-  pavementTexture.repeat.set(70, 70);
+  pavementTexture.repeat.set(130, 130);
   pavementTexture.magFilter = THREE.NearestFilter;
   pavementTexture.needsUpdate = true;
   pavement.map = pavementTexture;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), pavement);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(280, 280), pavement);
   ground.rotation.x = -Math.PI / 2;
   root.add(ground);
   addBox(0, -0.015, 0, 14, 0.04, 130, 0x24272e, { outline: 0 });
@@ -88,8 +88,8 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   addBox(DOOR_BACK_X, 4.6, 12, 0.3, 0.8, 3.6, 0x3a3540, { outline: 0.02 });
   for (const z of [10.3, 13.7]) addBox(DOOR_BACK_X, 2.1, z, 0.34, 4.2, 0.2, 0x4c5854, { outline: 0.02 });
   const clubDoors = [
-    addSwingDoor(DOOR_BACK_X, 10.42, 1.58, 4.1, 0x31584a, 1, 1.45, 0xb98a7c),
-    addSwingDoor(DOOR_BACK_X, 13.58, 1.58, 4.1, 0x31584a, -1, -1.45, 0xb98a7c),
+    addSwingDoor(DOOR_BACK_X, 10.42, 1.58, 4.1, 0x31584a, 1, -1.45, 0xb98a7c),
+    addSwingDoor(DOOR_BACK_X, 13.58, 1.58, 4.1, 0x31584a, -1, 1.45, 0xb98a7c),
   ];
   // Dim red lobby is visible once the doors open.
   addBox(-21.6, 0.03, 12, 3.4, 0.06, 3.6, 0x2a2140, { outline: 0 });
@@ -137,10 +137,22 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     [16, -9.5, Math.PI / 2, 0xf2f2f2],
   ];
   for (const [x, z, r, c] of cars) {
-    addBox(x, 0.75, z, 2.4, 1, 5, c, { rotY: r, collide: true, outline: 0.07 });
-    addBox(x, 1.6, z - 0.2 * Math.cos(r), 2.1, 0.9, 2.4, 0x1b1830, { rotY: r, outline: 0.06 });
-    addBox(x, 0.55, z + 2.4 * Math.cos(r), 1.8, 0.4, 0.3, 0xfff0c2, { rotY: r, outline: 0, emissive: true });
-    addBox(x, 0.55, z - 2.4 * Math.cos(r), 1.8, 0.4, 0.3, 0xff3b30, { rotY: r, outline: 0, emissive: true });
+    // Offsets are in the car's own frame, so rotated cars keep lights and wheels attached.
+    const at = (lx: number, lz: number): [number, number] =>
+      [x + lx * Math.cos(r) + lz * Math.sin(r), z - lx * Math.sin(r) + lz * Math.cos(r)];
+    addBox(x, 0.82, z, 2.3, 0.8, 4.9, c, { rotY: r, collide: true, outline: 0.05 });
+    const [cx, cz] = at(0, -0.25);
+    addBox(cx, 1.55, cz, 2.0, 0.7, 2.5, 0x1b1830, { rotY: r, outline: 0.04 });
+    for (const lx of [-1.08, 1.08]) {
+      for (const lz of [-1.6, 1.6]) {
+        const [wx, wz] = at(lx, lz);
+        addBox(wx, 0.36, wz, 0.32, 0.72, 0.72, 0x111015, { rotY: r, outline: 0.02 });
+      }
+      const [hx2, hz2] = at(lx * 0.68, 2.46);
+      addBox(hx2, 0.95, hz2, 0.5, 0.22, 0.06, 0xfff0c2, { rotY: r, outline: 0, emissive: true });
+      const [tx, tz] = at(lx * 0.68, -2.46);
+      addBox(tx, 0.95, tz, 0.5, 0.22, 0.06, 0xff3b30, { rotY: r, outline: 0, emissive: true });
+    }
   }
 
   // One non-hostile witness, beside his belongings, away from the doorway.
@@ -177,7 +189,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   addBox(hx - 1.03, 1.65, HOME.frontZ + 1, 0.14, 3.3, 2, 0x287b78, { outline: 0.025 });
   addBox(hx - 0.92, 1.5, HOME.frontZ + 1.6, 0.08, 0.12, 0.18, 0xd0b574, { outline: 0 });
   addBox(hx, 3.55, HOME.frontZ - 0.7, 3.3, 0.18, 1.8, 0x36565c, { outline: 0.025 });
-  addBox(hx - 1.6, 2.75, HOME.frontZ - 0.4, 0.3, 0.4, 0.3, 0xffd899, { outline: 0.015, emissive: true });
+  addBox(hx - 1.6, 2.75, HOME.frontZ - 0.32, 0.3, 0.4, 0.24, 0xffd899, { outline: 0.015, emissive: true });
   const porch = new THREE.PointLight(0xffd899, 14, 10, 2);
   porch.position.set(hx, 2.8, HOME.frontZ - 0.8);
   root.add(porch);
@@ -265,7 +277,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     pickups,
     enemies,
     exits: [
-      { x: CX + 0.5, z: 12, r: 0.85, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside" },
+      { x: DOOR_BACK_X + 1, z: 12, r: 1, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside", doors: clubDoors },
     ],
     background: 0x0d0920,
     fog: { color: 0x1a1236, near: 30, far: 130 },

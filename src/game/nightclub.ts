@@ -9,7 +9,7 @@ const ROOM_Z = 16; // half-depth
 const WALL_H = 9;
 
 export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
-  const { root, colliders, spin, flicker, bob, toon, glow, addBox, addBartender } =
+  const { root, colliders, spin, flicker, bob, toon, glow, addBox, addBartender, addSwingDoor } =
     makeBuilder(gradient);
   const floorTiles: THREE.Mesh[] = [];
   const pickups: THREE.Object3D[] = [];

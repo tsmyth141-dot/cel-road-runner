@@ -32,6 +32,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [hasStartedWalking, setHasStartedWalking] = useState(!intro);
   const [talking, setTalking] = useState(false);
+  const [destination, setDestination] = useState<string | null>(null);
   const [speaker, setSpeaker] = useState<'bartender' | 'witness'>('bartender');
   const [reply, setReply] = useState<string | null>(null);
   const objectives = chapterObjectives(loadout.zone, loadout.storyFlags, loadout.unlocked.includes("tagger"));
@@ -60,6 +61,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       },
       {
         playIntro: intro,
+        onTransition: setDestination,
         onConversation: (active, nextSpeaker) => {
           setTalking(active);
           if (nextSpeaker) setSpeaker(nextSpeaker);
@@ -89,7 +91,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
       {/* HUD */}
       <div
         className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${
-          cut.active ? "opacity-0" : "opacity-100"
+          cut.active || destination ? "opacity-0" : "opacity-100"
         }`}
       >
         {/* vignette + scanline grade */}
@@ -182,7 +184,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
         )}
       </div>
 
-      {!cut.active && (
+      {!cut.active && !destination && (
         <aside aria-label="Objectives" className="pointer-events-none absolute right-4 top-4 w-60 max-w-[48vw] border-l-2 border-secondary/70 bg-background/65 px-3 py-3 sm:right-6 sm:top-6 sm:w-72">
           <p className="font-display text-xs uppercase text-secondary">Chapter 1 · Get your bearings</p>
           <h2 className="mb-3 font-display text-xl text-foreground">Objectives</h2>
@@ -264,7 +266,15 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
         </div>
       )}
 
-      {!locked && !cut.active && !talking && (
+      {destination && (
+        <div role="status" aria-live="polite" className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/95">
+          <p className="font-display text-sm uppercase text-secondary">Loading</p>
+          <h2 className="font-display text-4xl text-foreground">{destination}</h2>
+          <div className="mt-3 h-1 w-32 bg-secondary/50" />
+        </div>
+      )}
+
+      {!locked && !cut.active && !talking && !destination && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/30 px-6 text-center">
           <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-md border border-foreground/20 bg-background/90 px-6 py-7">
           <div>

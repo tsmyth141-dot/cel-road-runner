@@ -38,7 +38,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     [-ROOM_X + 0.6, -1.4, 0.2, 27.6], // stops before the exit door
     [ROOM_X - 0.6, 0, 0.2, ROOM_Z * 2 - 2],
   ] as [number, number, number, number][]) {
-    addBox(x, 0.18, z, w, 0.16, d, 0xff2e7e, { outline: 0, emissive: true });
+    addBox(x, 0.18, z, w, 0.16, d, 0x6d5e56, { outline: 0 });
   }
 
   // Keep a couple of murals at the far end rather than filling every wall with glowing rectangles.
@@ -73,7 +73,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     const bx = -16 + i * 8;
     addBox(bx, 7.4, -ROOM_Z + 1.1, 2.2, 3.2, 0.16, 0x0f0b1c, { outline: 0.05 });
     addBox(bx, 7.4, -ROOM_Z + 1.0, 1.5, 2.4, 0.2, tileColorsSeed[i % tileColorsSeed.length]!, {
-      outline: 0, emissive: true,
+      outline: 0,
     });
   }
   // Deep ceiling coffers so the roof reads as built, not a flat lid
@@ -95,13 +95,13 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     for (let iz = -2; iz <= 2; iz++) {
       const m = new THREE.Mesh(
         tileGeo,
-        new THREE.MeshBasicMaterial({ color: tileColors[(ix + iz + 10) % tileColors.length]! }),
+        new THREE.MeshBasicMaterial({ color: (ix + iz) % 2 ? 0x282b32 : 0x343139 }),
       );
       m.rotation.x = -Math.PI / 2;
       m.position.set(ix * 2.6, 0.03, iz * 2.6 + 2);
       m.userData['phase'] = (ix * 3 + iz * 5) * 0.7;
       root.add(m);
-      floorTiles.push(m);
+
     }
   }
   // Raised lip around the floor
@@ -129,15 +129,6 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     addBox(sx, 1.2, -11.1, 1.4, 1.4, 0.2, 0x241a3d, { outline: 0.03 });
     addBox(sx, 4.4, -12.5, 3.2, 0.2, 2.8, 0xffd400, { outline: 0, emissive: true });
   }
-  // LED wall behind the DJ
-  addBox(0, 5.6, -15.2, 15, 5, 0.3, 0x0f0b1c, { outline: 0.06 });
-  for (let i = -3; i <= 3; i++) {
-    addBox(i * 2, 5.6, -15, 1.5, 4, 0.3, tileColors[(i + 5) % tileColors.length]!, {
-      outline: 0,
-      emissive: true,
-    });
-  }
-
   /* ---------------- Bar ---------------- */
   // A continuous dark timber counter, foot rail, mirror and two rows of bottles.
   addBox(15, 0.67, 6, 10, 1.34, 1.8, 0x292128, { collide: true, outline: 0.035 });
@@ -191,14 +182,6 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   // The bartender, leaning over the booth in the opening scene.
   addBartender(-10.6, 5.6, 1.5, 1.04);
 
-  /* ---------------- Velvet rope + VIP corner (deserted) ---------------- */
-  addBox(-16, 0.9, -12, 12, 1.8, 4, 0x2b2046, { collide: true, outline: 0.06 });
-  addBox(-16, 1.85, -12, 11, 0.2, 3.6, 0x8b5cf6, { outline: 0.03, emissive: true });
-  for (let i = 0; i < 4; i++) {
-    addBox(-10 + i * 0.02, 0.55, -9.6 + i * 1.4, 0.22, 1.1, 0.22, 0xffd400, { outline: 0.03 });
-  }
-
-
   /* ---------------- Rigging + lights ---------------- */
   const ball = new THREE.Group();
   ball.add(
@@ -207,7 +190,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   );
   ball.position.set(0, 6.6, 2);
   root.add(ball);
-  spin.push(ball);
+
   addBox(0, 8, 2, 0.12, 3, 0.12, 0x0f0b1c, { outline: 0 });
 
   for (const tz of [-6, 2, 10]) {
@@ -229,7 +212,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     const l = new THREE.PointLight(c, 18, 24, 2);
     l.position.set(x!, y! - 1.2, z!);
     root.add(l);
-    flicker.push(l);
+
   });
 
 
@@ -271,17 +254,8 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
       rotY: 0, outline: 0.05,
     });
     addBox(px, 3.2 + (i % 3) * 0.5, ROOM_Z - 0.74, 1.7, 2.3, 0.08, flyer[i % flyer.length]!, {
-      outline: 0, emissive: true,
+      outline: 0,
     });
-  }
-  // Litter: cups, cans and a dropped tray on the floor
-  const litter: [number, number, number][] = [
-    [3.2, 12.6, 0xff2e7e],
-    [7.6, -4.2, 0x00e5ff], [-4.4, -9.2, 0xff7a1a], [12.2, 9.4, 0x8b5cf6],
-    [-15.2, 2.4, 0xf2f2f2], [1.4, 5.8, 0xffd400],
-  ];
-  for (const [x, z, c] of litter) {
-    addBox(x, 0.16, z, 0.28, 0.32, 0.28, c, { outline: 0.03 });
   }
   // Scuffed floor decals near the dance floor
   for (let i = 0; i < 5; i++) {
@@ -322,7 +296,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
   const haze = new THREE.PointLight(0xff5fa8, 10, 26, 2);
   haze.position.set(0, 4, -8);
   root.add(haze);
-  flicker.push(haze);
+
 
   void glow;
 
@@ -335,7 +309,7 @@ export function buildNightclub(gradient: THREE.DataTexture): ClubResult {
     pickups,
     enemies: [],
     exits: [
-      { ...CLUB_INNER_DOOR, r: 1, to: "city", spawn: CLUB_STREET_SPAWN, yaw: Math.PI, label: "Step outside", doors: clubDoors },
+      { ...CLUB_INNER_DOOR, r: 2.3, to: "city", spawn: CLUB_STREET_SPAWN, yaw: Math.PI, label: "Step outside", doors: clubDoors },
     ],
     background: 0x120c22,
     fog: { color: 0x120c22, near: 12, far: 48 },

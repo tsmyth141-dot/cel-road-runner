@@ -1,11 +1,13 @@
 import * as THREE from "three";
-import { buildViewModel, makeToonGradient, type Box, type LevelResult } from "./world";
+import { buildViewModel, makeToonGradient, type Box, type Exit, type LevelResult } from "./world";
 import { buildNightclub } from "./nightclub";
 import { buildCity } from "./city";
+import { buildHouse } from "./house";
+import { canUseDoor, TRANSITION_SECONDS } from "./transitions";
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
 import { movementIntent } from "./controls";
-import { groundedIdleHeight, HOME, STREET_WITNESS } from "./neighbourhood";
+import { groundedIdleHeight, STREET_WITNESS } from "./neighbourhood";
 import {
   CLUB_INTRO,
   lineAt,
@@ -62,6 +64,7 @@ type StartState = Pick<
 const LEVELS: Record<string, (g: THREE.DataTexture) => LevelResult> = {
   club: buildNightclub,
   city: buildCity,
+  home: buildHouse,
 };
 
 export function createEngine(
@@ -72,6 +75,7 @@ export function createEngine(
   options: {
     playIntro?: boolean;
     onCutscene?: (state: CutsceneState) => void;
+    onTransition?: (title: string | null) => void;
     onConversation?: (active: boolean, speaker?: 'bartender' | 'witness') => void;
   } = {},
 ): EngineHandle {
@@ -91,10 +95,10 @@ export function createEngine(
   const viewCamera = new THREE.PerspectiveCamera(55, 1, 0.01, 5);
 
   // --- loadout / progression state
-  const unlocked = new Set(start.unlocked?.length ? start.unlocked : [WEAPONS[0]!.id]);
-  unlocked.add(WEAPONS[0]!.id);
-  let weapon: WeaponDef =
-    WEAPONS.find((w) => w.id === start.weapon && unlocked.has(w.id)) ?? WEAPONS[0]!;
+  const firstWeapon = WEAPONS[0];
+  if (!firstWeapon) throw new Error("Missing default loadout");
+  const unlocked = new Set([firstWeapon.id]);
+  const weapon: WeaponDef = firstWeapon;
 
   const viewRig = new THREE.Group();
   let viewModel = buildViewModel(gradient, weapon);
@@ -107,7 +111,8 @@ export function createEngine(
 
   // --- level state
   let zone = LEVELS[start.zone] ? start.zone : "club";
-  let level: LevelResult = LEVELS[zone]!(gradient);
+  const initialBuilder = LEVELS[zone] ?? buildNightclub;
+  let level: LevelResult = initialBuilder(gradient);
   scene.add(level.root);
   applyLevelAtmosphere();
 
@@ -124,11 +129,10 @@ export function createEngine(
   const storyFlags = new Set(start.storyFlags ?? []);
   let bartenderInRange = false;
   let conversation = false;
-  let health = MAX_HEALTH;
-  let livingEnemies = level.enemies.length;
-  let lastHudHealth = health;
-  let lastHudEnemies = livingEnemies;
-  const raycaster = new THREE.Raycaster();
+  let nearbyDoor: Exit | undefined;
+  let pendingTravel: Exit | undefined;
+  let travelTime = 0;
+  let transitionBuilt = false;
 
   // --- opening cutscene
   let cutTime = 0;
@@ -193,9 +197,9 @@ export function createEngine(
       zone,
       title: level.title,
       prompt,
-      health,
+      health: MAX_HEALTH,
       maxHealth: MAX_HEALTH,
-      enemies: livingEnemies,
+      enemies: 0,
       storyFlags: [...storyFlags],
     });
   emitLoadout();
@@ -220,8 +224,7 @@ export function createEngine(
     zone = to;
     if (zone === "city") storyFlags.add("ch1-left-club");
     level = build(gradient);
-    livingEnemies = level.enemies.length;
-    lastHudEnemies = livingEnemies;
+    if (zone === "home") storyFlags.add("ch1-home-arrived");
     scene.add(level.root);
     applyLevelAtmosphere();
     player.set(spawn[0], EYE_HEIGHT, spawn[1]);
@@ -232,25 +235,24 @@ export function createEngine(
     emitLoadout();
   }
 
-  function equip(next: WeaponDef, justUnlocked?: string) {
-    weapon = next;
-    viewRig.remove(viewModel);
-    viewModel.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.material && !Array.isArray(m.material)) m.material.dispose?.();
-    });
-    viewModel = buildViewModel(gradient, weapon);
-    viewRig.add(viewModel);
-    emitLoadout(justUnlocked);
-  }
-
   const keys = new Set<string>();
   const onKeyDown = (e: KeyboardEvent) => {
     if (conversation) {
       if (e.code === "Escape") closeConversation();
       return;
     }
-    if (cutscene || document.pointerLockElement !== canvas) return;
+    if (cutscene || pendingTravel || document.pointerLockElement !== canvas) return;
+    if (e.code === "KeyE" && !e.repeat && nearbyDoor && canUseDoor(Math.hypot(nearbyDoor.x - player.x, nearbyDoor.z - player.z), nearbyDoor.r, doorCooldown, false)) {
+      e.preventDefault();
+      pendingTravel = nearbyDoor;
+      nearbyDoor = undefined;
+      travelTime = 0;
+      transitionBuilt = false;
+      keys.clear(); velocity.set(0, 0);
+      prompt = undefined; emitLoadout();
+      options.onTransition?.(pendingTravel.to === "city" ? "Canal Street" : pendingTravel.to === "home" ? "No. 17 · Home" : "The Velvet Can");
+      return;
+    }
     if (e.code === "KeyE" && !e.repeat && bartenderInRange) {
       e.preventDefault();
       conversation = true;
@@ -262,48 +264,16 @@ export function createEngine(
     }
     keys.add(e.code);
     if (e.code === "Space") e.preventDefault();
-    const slot = Number(e.code.replace("Digit", ""));
-    if (e.code.startsWith("Digit") && slot >= 1 && slot <= WEAPONS.length) {
-      const w = WEAPONS[slot - 1]!;
-      if (unlocked.has(w.id) && w.id !== weapon.id) equip(w);
-    }
   };
   const onKeyUp = (e: KeyboardEvent) => keys.delete(e.code);
 
   const onMouseMove = (e: MouseEvent) => {
-    if (cutscene || document.pointerLockElement !== canvas) return;
+    if (cutscene || pendingTravel || document.pointerLockElement !== canvas) return;
     yaw -= e.movementX * 0.0021;
     pitch -= e.movementY * 0.0021;
     pitch = Math.max(-1.45, Math.min(1.45, pitch));
     swayX += e.movementX * 0.00035;
     swayY += e.movementY * 0.00035;
-  };
-
-  const onMouseDown = () => {
-    if (document.pointerLockElement !== canvas) return;
-    recoil = 1;
-    if (cutscene) return;
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-    const maxRange = weapon.kind === "gun" ? 55 : 1.8;
-    raycaster.far = maxRange;
-    const enemyObjects = level.enemies.filter((enemy) => enemy.health > 0).map((enemy) => enemy.root);
-    const hit = raycaster.intersectObjects(enemyObjects, true)[0];
-    if (!hit) return;
-    let target: THREE.Object3D | null = hit.object;
-    let enemyRoot: THREE.Group | undefined;
-    while (target && !enemyRoot) {
-      enemyRoot = target.userData["enemyRoot"] as THREE.Group | undefined;
-      target = target.parent;
-    }
-    const enemy = level.enemies.find((candidate) => candidate.root === enemyRoot);
-    if (!enemy || enemy.health <= 0) return;
-    enemy.health -= weapon.kind === "gun" ? 34 : 22;
-    enemy.root.scale.set(1.15, 0.88, 1.15);
-    if (enemy.health <= 0) {
-      enemy.root.visible = false;
-      livingEnemies = Math.max(0, livingEnemies - 1);
-      emitLoadout();
-    }
   };
 
   const onLock = () => {
@@ -328,7 +298,6 @@ export function createEngine(
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("mousemove", onMouseMove);
-  window.addEventListener("mousedown", onMouseDown);
   window.addEventListener("resize", resize);
   document.addEventListener("pointerlockchange", onLock);
   resize();
@@ -361,6 +330,19 @@ export function createEngine(
     const now = performance.now();
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
+
+    if (pendingTravel) {
+      travelTime += dt;
+      if (!transitionBuilt && travelTime >= 0.15) {
+        travel(pendingTravel.to, pendingTravel.spawn, pendingTravel.yaw);
+        transitionBuilt = true;
+      }
+      if (travelTime >= TRANSITION_SECONDS) {
+        pendingTravel = undefined;
+        options.onTransition?.(null);
+      }
+      return;
+    }
 
     if (cutscene) {
       // wall-clock driven so a slow frame rate never stretches the scene
@@ -467,65 +449,6 @@ export function createEngine(
       }
     }
 
-    // Lightweight chapter enemies: patrol until nearby, then close in and strike.
-    if (!cutscene && zone === "city") {
-      for (const enemy of level.enemies) {
-        if (enemy.health <= 0 || !enemy.root.visible) continue;
-        enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
-        enemy.root.scale.x = THREE.MathUtils.damp(enemy.root.scale.x, 1, 10, dt);
-        enemy.root.scale.y = THREE.MathUtils.damp(enemy.root.scale.y, 1, 10, dt);
-        enemy.root.scale.z = THREE.MathUtils.damp(enemy.root.scale.z, 1, 10, dt);
-        const dx = player.x - enemy.root.position.x;
-        const dz = player.z - enemy.root.position.z;
-        const distance = Math.hypot(dx, dz);
-        if (distance < 15 && distance > 1.35) {
-          const targetYaw = Math.atan2(dx, dz);
-          const yawDiff = Math.atan2(Math.sin(targetYaw - enemy.root.rotation.y), Math.cos(targetYaw - enemy.root.rotation.y));
-          enemy.root.rotation.y += THREE.MathUtils.clamp(yawDiff, -2.8 * dt, 2.8 * dt);
-          const nextX = enemy.root.position.x + (dx / distance) * enemy.speed * dt;
-          const nextZ = enemy.root.position.z + (dz / distance) * enemy.speed * dt;
-          const blocked = level.colliders.some(b => nextX > b.minX - 0.35 && nextX < b.maxX + 0.35 && nextZ > b.minZ - 0.35 && nextZ < b.maxZ + 0.35);
-          if (!blocked) enemy.root.position.set(nextX, 0, nextZ);
-        } else if (distance <= 1.35 && enemy.attackCooldown === 0) {
-          health = Math.max(0, health - enemy.damage);
-          enemy.attackCooldown = 1.1;
-          recoil = Math.max(recoil, 0.45);
-        }
-      }
-    }
-
-
-    // Chapter pickups: the first gun at home, plus simple health cans.
-    for (let i = level.pickups.length - 1; i >= 0; i--) {
-      const p = level.pickups[i]!;
-      const dx = p.position.x - player.x;
-      const dz = p.position.z - player.z;
-      if (dx * dx + dz * dz < 1.6 * 1.6) {
-        const kind = p.userData["pickupKind"] as string | undefined;
-        level.pickups.splice(i, 1);
-        const spinIdx = level.animated.spin.indexOf(p);
-        if (spinIdx >= 0) level.animated.spin.splice(spinIdx, 1);
-        p.removeFromParent();
-        if (kind === "weapon") {
-          const weaponId = p.userData["weaponId"] as string | undefined;
-          const next = WEAPONS.find((w) => w.id === weaponId);
-          if (next && !unlocked.has(next.id)) {
-            unlocked.add(next.id);
-            storyFlags.add("ch1-first-gun");
-            equip(next, next.name);
-          }
-        } else if (kind === "health") {
-          health = Math.min(MAX_HEALTH, health + 35);
-        }
-      }
-    }
-
-    if (health !== lastHudHealth || livingEnemies !== lastHudEnemies) {
-      lastHudHealth = health;
-      lastHudEnemies = livingEnemies;
-      emitLoadout();
-    }
-
     // Doors between levels
     doorCooldown = Math.max(0, doorCooldown - dt);
     let nearPrompt: string | undefined;
@@ -539,31 +462,17 @@ export function createEngine(
     if (!cutscene && !conversation && zone === 'city') {
       bartenderInRange = Math.hypot(player.x - STREET_WITNESS.x, player.z - STREET_WITNESS.z) < 3;
       if (bartenderInRange) nearPrompt = 'E · Talk to the man';
-      if (!storyFlags.has('ch1-home-arrived') && Math.abs(player.x - HOME.x) < 3 && player.z > HOME.frontZ + 1 && player.z < HOME.z + 3) {
-        storyFlags.add('ch1-home-arrived'); persist(); emitLoadout();
-      }
+
     }
-    // Doors swing open as you walk up to them and close again behind you.
-    const doorEase = 1 - Math.exp(-5 * dt);
-    for (const ex of level.exits) {
-      if (!ex.doors) continue;
-      const target = Math.hypot(ex.x - player.x, ex.z - player.z) < 4.2 ? 1 : 0;
-      for (const d of ex.doors) {
-        const open = ((d.userData['open'] as number) ?? 0) + (target - ((d.userData['open'] as number) ?? 0)) * doorEase;
-        d.userData['open'] = open;
-        d.rotation.y = ((d.userData['openYaw'] as number) ?? 0) * open;
-      }
-    }
-    for (const ex of level.exits) {
-      const dx = ex.x - player.x;
-      const dz = ex.z - player.z;
-      if (dx * dx + dz * dz < ex.r * ex.r) {
-        nearPrompt = ex.label;
-        if (doorCooldown === 0) {
-          travel(ex.to, ex.spawn, ex.yaw);
-          nearPrompt = undefined;
+    // Closed, visible doors require an explicit E press; walking never teleports.
+    nearbyDoor = undefined;
+    if (!cutscene && !conversation) {
+      for (const ex of level.exits) {
+        if (canUseDoor(Math.hypot(ex.x - player.x, ex.z - player.z), ex.r, doorCooldown, false)) {
+          nearbyDoor = ex;
+          nearPrompt = `E · ${ex.label}`;
+          break;
         }
-        break;
       }
     }
     if (nearPrompt !== prompt) {
@@ -575,7 +484,8 @@ export function createEngine(
     if (level.floorTiles.length) {
       const beat = (now * 0.00012) % 1;
       for (let i = 0; i < level.floorTiles.length; i++) {
-        const t = level.floorTiles[i]!;
+        const t = level.floorTiles[i];
+        if (!t) continue;
         const m = t.material as THREE.MeshBasicMaterial;
         const k =
           0.35 + 0.65 * Math.abs(Math.sin(beat * Math.PI + (t.userData['phase'] as number)));
@@ -584,7 +494,8 @@ export function createEngine(
     }
 
     for (let i = 0; i < level.animated.flicker.length; i++) {
-      const l = level.animated.flicker[i]!;
+      const l = level.animated.flicker[i];
+      if (!l) continue;
       l.intensity =
         (l.userData['base'] ??= l.intensity) *
         (0.86 + Math.sin(now * 0.006 + i * 2.1) * 0.1 + Math.random() * 0.04);
@@ -624,7 +535,6 @@ export function createEngine(
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("resize", resize);
       document.removeEventListener("pointerlockchange", onLock);
       for (const s of [scene, viewScene]) {

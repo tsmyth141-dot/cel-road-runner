@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Limit street scenery to two parked cars; make doors explicit interactions with loading screens between club, street and house; tidy club and bartender; preserve homeless dialogue.
+- [ ] Remove unused enemy and power-up processing for lightweight story exploration.
 - [ ] Rebuild both club exit doors as real framed doors that swing open; remove floating street objects; rebuild the first-person hand.
 
 

@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { makeBuilder, type LevelResult } from "./world";
 import { CLUB_STREET_DOOR, HOME, STREET_WITNESS, groundedIdleHeight } from "./neighbourhood";
 
+import { PARKED_CARS } from "./transitions";
+
 const BOUND = 58;
 
 /** Night-time street block outside the club: town square, shopfronts, traffic, pedestrians. */
@@ -128,15 +130,7 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   }
 
   // Parked cars along the kerb
-  const cars: [number, number, number, number][] = [
-    [9.5, -8, 0, 0xff2e7e],
-    [9.5, 6, 0, 0x00e5ff],
-    [-9.5, -2, 0, 0xffd400],
-    [-9.5, 18, 0, 0x27d17c],
-    [-2, 9.5, Math.PI / 2, 0x8b5cf6],
-    [16, -9.5, Math.PI / 2, 0xf2f2f2],
-  ];
-  for (const [x, z, r, c] of cars) {
+  for (const [x, z, r, c] of PARKED_CARS) {
     // Offsets are in the car's own frame, so rotated cars keep lights and wheels attached.
     const at = (lx: number, lz: number): [number, number] =>
       [x + lx * Math.cos(r) + lz * Math.sin(r), z - lx * Math.sin(r) + lz * Math.cos(r)];
@@ -185,9 +179,9 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
   roof.position.set(hx, 5.2, hz - 4.4);
   root.add(roof);
   addBox(hx + 3, 6.3, hz + 1.5, 0.9, 2.3, 1, 0x807b73, { outline: 0.025 });
-  // Teal door stands open into the room, leaving a clear entrance.
-  addBox(hx - 1.03, 1.65, HOME.frontZ + 1, 0.14, 3.3, 2, 0x287b78, { outline: 0.025 });
-  addBox(hx - 0.92, 1.5, HOME.frontZ + 1.6, 0.08, 0.12, 0.18, 0xd0b574, { outline: 0 });
+  // Closed teal front door: E loads the separate interior.
+  addBox(hx, 1.65, HOME.frontZ, 2, 3.3, 0.14, 0x287b78, { outline: 0.015 });
+  addBox(hx + 0.72, 1.5, HOME.frontZ - 0.1, 0.12, 0.12, 0.08, 0xd0b574, { outline: 0 });
   addBox(hx, 3.55, HOME.frontZ - 0.7, 3.3, 0.18, 1.8, 0x36565c, { outline: 0.025 });
   addBox(hx - 1.6, 2.75, HOME.frontZ - 0.32, 0.3, 0.4, 0.24, 0xffd899, { outline: 0.015, emissive: true });
   const porch = new THREE.PointLight(0xffd899, 14, 10, 2);
@@ -277,7 +271,8 @@ export function buildCity(gradient: THREE.DataTexture): LevelResult {
     pickups,
     enemies,
     exits: [
-      { x: DOOR_BACK_X + 1, z: 12, r: 1, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside", doors: clubDoors },
+      { x: DOOR_BACK_X + 1, z: 12, r: 2.2, to: "club", spawn: [-19, 14], yaw: -Math.PI / 2, label: "Back inside", doors: clubDoors },
+      { x: HOME.x, z: HOME.frontZ - 1, r: 2.2, to: "home", spawn: [0, 4.5], yaw: 0, label: "Enter your home" },
     ],
     background: 0x0d0920,
     fog: { color: 0x1a1236, near: 30, far: 130 },

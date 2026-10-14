@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { clearSave, loadGame, NEW_GAME_STATE, type SaveData } from "@/game/save";
-
-const GameCanvas = lazy(() => import("@/components/GameCanvas"));
+import GameCanvas from "@/components/GameCanvas";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -42,7 +41,6 @@ function Index() {
   if (session) {
     return (
       <ClientOnly>
-        <Suspense fallback={<div className="fixed inset-0 bg-background" />}>
           <GameCanvas
             start={session}
             intro={intro}
@@ -51,7 +49,6 @@ function Index() {
               setSave(loadGame());
             }}
           />
-        </Suspense>
       </ClientOnly>
     );
   }

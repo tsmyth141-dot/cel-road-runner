@@ -18,4 +18,5 @@
 - Use automatic doorstep entry for home and explicit E interactions for other zone transitions, retaining a DOM loading overlay and render-loop input lock; this avoids unnecessary home prompts and pauses WebGL during map construction.
 - Keep holstering separate from equipped weapon state and omit the viewmodel render pass while hidden; this preserves the loadout and saves GPU work.
 - Author the bartender with continuous sculpted profiles and connected limb pivots in the shared builder; this keeps natural proportions without new asset-loading or rendering dependencies.
+- Import the browser-safe game component with the index route and gate rendering with ClientOnly; this avoids a separate stale game-chunk fetch when starting after a preview update. Browser APIs remain inside effects and engine creation.
 - Author each interior as a separate lightweight level builder; this keeps street scenery and indoor collision independent.

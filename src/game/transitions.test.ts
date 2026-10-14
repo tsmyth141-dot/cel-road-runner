@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canUseDoor, PARKED_CARS } from './transitions';
+import { canUseDoor, entersHomeAutomatically, PARKED_CARS } from './transitions';
 import { buildHouse } from './house';
 import { makeToonGradient } from './world';
 
@@ -22,4 +22,9 @@ test('home is a separate empty map with a return door', () => {
   assert.equal(house.pickups.length, 0);
   assert.equal(house.enemies.length, 0);
   assert.equal(house.exits[0]?.to, 'city');
+});
+test('walking up to home enters without pressing E, not other doors', () => {
+  assert.equal(entersHomeAutomatically('city', 'home'), true);
+  assert.equal(entersHomeAutomatically('city', 'club'), false);
+  assert.equal(entersHomeAutomatically('home', 'city'), false);
 });

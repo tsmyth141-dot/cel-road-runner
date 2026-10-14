@@ -8,7 +8,7 @@ export function MovementControls() {
         ))}
       </div>
       <p className="mt-4 text-center text-xs text-muted-foreground">Mouse · Look &nbsp; Shift · Sprint &nbsp; E · Talk</p>
-      <p className="mt-1 text-center text-xs text-muted-foreground">Esc · Pause</p>
+      <p className="mt-1 text-center text-xs text-muted-foreground">H · Put away / draw &nbsp; Esc · Pause</p>
     </div>
   );
 }

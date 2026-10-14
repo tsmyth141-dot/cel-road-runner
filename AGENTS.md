@@ -15,5 +15,6 @@
 - Keep optional bartender conversation separate from cutscene playback, using engine interaction state and DOM choices; this preserves the player's position and never replays the wake-up.
 - Centralize camera-relative movement intent in a pure tested helper; this keeps traditional directional controls consistent with mouse look.
 - Share street landmarks between level scenery and navigation tests; this keeps door thresholds and the two-block home approach aligned.
-- Keep zone transitions explicit E-key interactions with a DOM loading overlay and render-loop input lock; this prevents accidental returns and pauses WebGL during map construction.
+- Use automatic doorstep entry for home and explicit E interactions for other zone transitions, retaining a DOM loading overlay and render-loop input lock; this avoids unnecessary home prompts and pauses WebGL during map construction.
+- Keep holstering separate from equipped weapon state and omit the viewmodel render pass while hidden; this preserves the loadout and saves GPU work.
 - Author each interior as a separate lightweight level builder; this keeps street scenery and indoor collision independent.

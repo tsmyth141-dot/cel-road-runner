@@ -17,4 +17,5 @@
 - Share street landmarks between level scenery and navigation tests; this keeps door thresholds and the two-block home approach aligned.
 - Use automatic doorstep entry for home and explicit E interactions for other zone transitions, retaining a DOM loading overlay and render-loop input lock; this avoids unnecessary home prompts and pauses WebGL during map construction.
 - Keep holstering separate from equipped weapon state and omit the viewmodel render pass while hidden; this preserves the loadout and saves GPU work.
+- Author the bartender with continuous sculpted profiles and connected limb pivots in the shared builder; this keeps natural proportions without new asset-loading or rendering dependencies.
 - Author each interior as a separate lightweight level builder; this keeps street scenery and indoor collision independent.

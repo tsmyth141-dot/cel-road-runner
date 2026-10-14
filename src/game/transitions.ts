@@ -7,3 +7,8 @@ export const PARKED_CARS: ReadonlyArray<readonly [number, number, number, number
 export function canUseDoor(distance: number, radius: number, cooldown: number, busy: boolean) {
   return !busy && cooldown <= 0 && distance <= radius;
 }
+
+/** Home entry is automatic at its doorstep; other exits retain E interaction. */
+export function entersHomeAutomatically(zone: string, destination: string) {
+  return zone === 'city' && destination === 'home';
+}

@@ -4,7 +4,7 @@ import type { SaveData } from "@/game/save";
 import { WEAPONS } from "@/game/progression";
 import { chapterObjectives } from "@/game/objectives";
 import { Button } from "@/components/ui/button";
-import { Check, Circle, ArrowRight } from "lucide-react";
+import { Check, Circle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { MovementControls } from "./MovementControls";
 import { BARTENDER_CHOICES, WITNESS_CHOICES } from "@/game/dialogue";
 
@@ -22,6 +22,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
   const [loadout, setLoadout] = useState<LoadoutState>({
     unlocked: start.unlocked,
     weapon: start.weapon,
+    holstered: false,
     zone: start.zone,
     title: start.zone === "city" ? "Canal Street" : "The Velvet Can",
     health: 100,
@@ -139,8 +140,11 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
         {/* Weapon rack — greyed slots are still locked */}
         <div className="absolute bottom-6 right-6 flex flex-col items-end gap-1">
           <p className="font-display text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            Loadout
+            {loadout.holstered ? 'Put away' : 'Loadout'}
           </p>
+          <Button variant="outline" size="icon" className="pointer-events-auto size-8 border-foreground/40 bg-background/70" title={loadout.holstered ? 'Show hand / weapon (H)' : 'Put away hand / weapon (H)'} aria-label={loadout.holstered ? 'Show hand / weapon' : 'Put away hand / weapon'} aria-pressed={loadout.holstered} onClick={() => engineRef.current?.toggleWeaponVisibility()}>
+            {loadout.holstered ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </Button>
           <div className="flex gap-2">
             {WEAPONS.map((w, i) => {
               const owned = loadout.unlocked.includes(w.id);
@@ -203,7 +207,7 @@ export default function GameCanvas({ start, intro = false, onExit }: Props) {
         <div className="pointer-events-none absolute bottom-28 left-4 border-l-2 border-secondary/60 bg-background/65 px-3 py-2 text-xs text-foreground sm:left-6">
           <p className="mb-1 font-display text-sm text-secondary">Get your bearings</p>
           <p><kbd>W ↑</kbd> Forward · <kbd>A ←</kbd> Left · <kbd>S ↓</kbd> Back · <kbd>D →</kbd> Right</p>
-          <p className="mt-1"><kbd>Shift</kbd> · Sprint &nbsp; <kbd>E</kbd> · Interact &nbsp; <kbd>Esc</kbd> · Pause</p>
+          <p className="mt-1"><kbd>Shift</kbd> · Sprint &nbsp; <kbd>E</kbd> · Interact &nbsp; <kbd>H</kbd> · Put away / draw &nbsp; <kbd>Esc</kbd> · Pause</p>
         </div>
       )}
 

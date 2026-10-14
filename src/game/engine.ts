@@ -3,7 +3,8 @@ import { buildViewModel, makeToonGradient, type Box, type Exit, type LevelResult
 import { buildNightclub } from "./nightclub";
 import { buildCity } from "./city";
 import { buildHouse } from "./house";
-import { canUseDoor, TRANSITION_SECONDS } from "./transitions";
+import { canUseDoor, entersHomeAutomatically, TRANSITION_SECONDS } from "./transitions";
+import { toggleHolstered, shouldShowWeapon } from './weapon-visibility';
 import { saveGame, type SaveData } from "./save";
 import { WEAPONS, type WeaponDef } from "./progression";
 import { movementIntent } from "./controls";
@@ -22,6 +23,7 @@ export type EngineHandle = {
   save: () => void;
   skipCutscene: () => void;
   closeConversation: () => void;
+  toggleWeaponVisibility: () => void;
 };
 
 export type CutsceneState = {
@@ -35,6 +37,7 @@ export type CutsceneState = {
 export type LoadoutState = {
   unlocked: string[];
   weapon: string;
+  holstered: boolean;
   /** Set when a weapon was just earned, for the HUD toast. */
   justUnlocked?: string | undefined;
   /** Current level id + display title. */
@@ -99,6 +102,7 @@ export function createEngine(
   if (!firstWeapon) throw new Error("Missing default loadout");
   const unlocked = new Set([firstWeapon.id]);
   const weapon: WeaponDef = firstWeapon;
+  let holstered = false;
 
   const viewRig = new THREE.Group();
   let viewModel = buildViewModel(gradient, weapon);
@@ -153,7 +157,7 @@ export function createEngine(
     cutStart = 0;
     cutLine = null;
     keys.clear();
-    viewRig.visible = true;
+    viewRig.visible = shouldShowWeapon(holstered, false, conversation);
     const lastKey = finishedScript?.keys[finishedScript.keys.length - 1];
     if (lastKey) {
       player.set(lastKey.pos[0], EYE_HEIGHT, lastKey.pos[2]);
@@ -193,6 +197,7 @@ export function createEngine(
     onLoadout({
       unlocked: [...unlocked],
       weapon: weapon.id,
+      holstered,
       justUnlocked,
       zone,
       title: level.title,
@@ -236,21 +241,36 @@ export function createEngine(
   }
 
   const keys = new Set<string>();
+  function toggleWeaponVisibility() {
+    if (cutscene || conversation || pendingTravel) return;
+    holstered = toggleHolstered(holstered);
+    viewRig.visible = shouldShowWeapon(holstered, cutscene, conversation);
+    emitLoadout();
+  }
+
+  function beginTravel(exit: Exit) {
+    pendingTravel = exit;
+    nearbyDoor = undefined;
+    travelTime = 0;
+    transitionBuilt = false;
+    keys.clear(); velocity.set(0, 0);
+    prompt = undefined; emitLoadout();
+    options.onTransition?.(exit.to === "city" ? "Canal Street" : exit.to === "home" ? "No. 17 · Home" : "The Velvet Can");
+  }
   const onKeyDown = (e: KeyboardEvent) => {
     if (conversation) {
       if (e.code === "Escape") closeConversation();
       return;
     }
     if (cutscene || pendingTravel || document.pointerLockElement !== canvas) return;
+    if (e.code === 'KeyH' && !e.repeat) {
+      e.preventDefault();
+      toggleWeaponVisibility();
+      return;
+    }
     if (e.code === "KeyE" && !e.repeat && nearbyDoor && canUseDoor(Math.hypot(nearbyDoor.x - player.x, nearbyDoor.z - player.z), nearbyDoor.r, doorCooldown, false)) {
       e.preventDefault();
-      pendingTravel = nearbyDoor;
-      nearbyDoor = undefined;
-      travelTime = 0;
-      transitionBuilt = false;
-      keys.clear(); velocity.set(0, 0);
-      prompt = undefined; emitLoadout();
-      options.onTransition?.(pendingTravel.to === "city" ? "Canal Street" : pendingTravel.to === "home" ? "No. 17 · Home" : "The Velvet Can");
+      beginTravel(nearbyDoor);
       return;
     }
     if (e.code === "KeyE" && !e.repeat && bartenderInRange) {
@@ -464,13 +484,17 @@ export function createEngine(
       if (bartenderInRange) nearPrompt = 'E · Talk to the man';
 
     }
-    // Closed, visible doors require an explicit E press; walking never teleports.
+    // Home enters at the doorstep; other doors keep explicit E interaction.
     nearbyDoor = undefined;
     if (!cutscene && !conversation) {
       for (const ex of level.exits) {
         if (canUseDoor(Math.hypot(ex.x - player.x, ex.z - player.z), ex.r, doorCooldown, false)) {
+          if (entersHomeAutomatically(zone, ex.to) && document.pointerLockElement === canvas) {
+            beginTravel(ex);
+            return;
+          }
           nearbyDoor = ex;
-          nearPrompt = `E · ${ex.label}`;
+          if (!entersHomeAutomatically(zone, ex.to)) nearPrompt = `E · ${ex.label}`;
           break;
         }
       }
@@ -502,10 +526,13 @@ export function createEngine(
     }
 
     renderer.render(scene, camera);
-    renderer.autoClear = false;
-    renderer.clearDepth();
-    renderer.render(viewScene, viewCamera);
-    renderer.autoClear = true;
+    viewRig.visible = shouldShowWeapon(holstered, cutscene, conversation);
+    if (viewRig.visible) {
+      renderer.autoClear = false;
+      renderer.clearDepth();
+      renderer.render(viewScene, viewCamera);
+      renderer.autoClear = true;
+    }
 
     autosave += dt;
     if (autosave > 10) {
@@ -551,5 +578,6 @@ export function createEngine(
     save: persist,
     skipCutscene,
     closeConversation,
+    toggleWeaponVisibility,
   };
 }

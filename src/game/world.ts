@@ -189,125 +189,128 @@ export function makeBuilder(gradient: THREE.DataTexture) {
     return g;
   }
 
-  /** Bespoke opening bartender: a compact, expressive low-poly character. */
+  /** Human-proportioned bartender, sculpted locally to keep the compact level pipeline. */
   function addBartender(x: number, z: number, rotY = 0, scale = 1) {
     const g = new THREE.Group();
-    const skin = 0xa96745;
-    const skinLight = 0xcf8961;
-    const shirt = 0xeee6d8;
-    const vest = 0x191522;
-    const apron = 0x167f78;
-    const gold = 0xffc338;
-
+    g.name = 'Bartender';
+    const skin = 0xb88160;
+    const shirt = 0xd2cec2;
+    const cloth = 0x26292a;
+    const hair = 0x302821;
+    const sphere = new THREE.SphereGeometry(1, 16, 12);
     const part = (
-      geometry: THREE.BufferGeometry,
-      color: number,
-      position: [number, number, number],
-      partScale: [number, number, number],
-      rotation: [number, number, number] = [0, 0, 0],
-      outline = 0.07,
-      parent: THREE.Object3D = g,
+      geometry: THREE.BufferGeometry, color: number,
+      position: [number, number, number], size: [number, number, number],
+      parent: THREE.Object3D = g, outline = 0.018,
     ) => {
       const wrap = new THREE.Group();
       const mesh = new THREE.Mesh(geometry, toon(color));
-      mesh.scale.set(...partScale);
+      mesh.scale.set(...size);
       wrap.add(mesh);
       if (outline > 0) {
-        const ink = outline * 0.85;
-        const contour = new THREE.Mesh(geometry, OUTLINE_MAT);
-        contour.scale.set(partScale[0] * (1 + ink), partScale[1] * (1 + ink), partScale[2] * (1 + ink));
-        wrap.add(contour);
+        const ink = new THREE.Mesh(geometry, OUTLINE_MAT);
+        ink.scale.set(size[0] * (1 + outline), size[1] * (1 + outline), size[2] * (1 + outline));
+        wrap.add(ink);
       }
       wrap.position.set(...position);
-      wrap.rotation.set(...rotation);
       parent.add(wrap);
       return wrap;
     };
-
-    const cube = boxGeo;
-    const headGeo = new THREE.SphereGeometry(0.5, 10, 8);
-    const roundGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 8);
-    const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(0.72, 16),
-      new THREE.MeshBasicMaterial({ color: 0x08040f, transparent: true, opacity: 0.48, depthWrite: false }),
+    const profile = (points: [number, number][]) => new THREE.LatheGeometry(
+      points.map(([r, y]) => new THREE.Vector2(r, y)), 12,
     );
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.set(0, 0.012, 0);
-    g.add(shadow);
-
-    // Heavy boots, cropped trousers, and an asymmetrical planted stance.
-    part(cube, 0x0d0c13, [-0.27, 0.13, -0.06], [0.32, 0.2, 0.5], [0, -0.08, 0]);
-    part(cube, 0x0d0c13, [0.28, 0.13, 0.04], [0.32, 0.2, 0.5], [0, 0.12, 0]);
-    part(cube, 0x262231, [-0.25, 0.63, 0], [0.34, 0.82, 0.36], [0, 0, -0.03]);
-    part(cube, 0x262231, [0.25, 0.65, 0], [0.34, 0.86, 0.36], [0, 0, 0.03]);
-
-    // Broad shirt and waistcoat create a recognisable, top-heavy silhouette.
-    part(cube, shirt, [0, 1.48, 0], [1.02, 0.94, 0.46], [0, 0, 0], 0.085);
-    part(cube, vest, [0, 1.5, -0.29], [0.9, 0.9, 0.12], [0, 0, -0.025], 0.045);
-    part(cube, apron, [0, 0.92, -0.31], [0.82, 0.82, 0.1], [0, 0, 0.02], 0.04);
-    part(cube, 0x0d4e4d, [0, 0.49, -0.3], [0.9, 0.08, 0.12], [0, 0, 0], 0.025);
-    part(cube, gold, [0, 1.67, -0.37], [0.13, 0.13, 0.05], [0, 0, Math.PI / 4], 0.02);
-    part(cube, gold, [0.28, 1.74, -0.37], [0.17, 0.07, 0.025], [0, 0, 0], 0.02);
-
-    // Connected shoulder / elbow pivots keep the arms relaxed and anatomically readable.
-    const leftShoulder = new THREE.Group();
-    leftShoulder.position.set(-0.57, 1.79, 0);
-    leftShoulder.rotation.set(-0.12, 0, -0.16);
-    g.add(leftShoulder);
-    const armGeo = new THREE.CylinderGeometry(0.5, 0.42, 1, 8);
-    const handGeo = new THREE.SphereGeometry(0.5, 8, 6);
-    const addArm = (shoulder: THREE.Group, bend: number) => {
-      part(armGeo, shirt, [0, -0.21, 0], [0.31, 0.46, 0.31], [0, 0, 0], 0.02, shoulder);
-      part(roundGeo, shirt, [0, -0.4, 0], [0.33, 0.075, 0.33], [0, 0, 0], 0.012, shoulder);
-      const elbow = new THREE.Group();
-      elbow.position.set(0, -0.44, 0);
-      elbow.rotation.x = bend;
-      shoulder.add(elbow);
-      part(handGeo, skin, [0, 0, 0], [0.24, 0.24, 0.24], [0, 0, 0], 0, elbow);
-      part(armGeo, skin, [0, -0.21, 0], [0.23, 0.44, 0.23], [0, 0, 0], 0.016, elbow);
-      part(handGeo, skinLight, [0, -0.51, -0.025], [0.22, 0.27, 0.16], [0, 0, 0], 0.012, elbow);
-      part(handGeo, skin, [0.1, -0.47, -0.035], [0.095, 0.16, 0.1], [0, 0, -0.25], 0, elbow);
-    };
-    addArm(leftShoulder, 0.35);
-
-    const rightShoulder = new THREE.Group();
-    rightShoulder.position.set(0.57, 1.79, 0);
-    rightShoulder.rotation.set(0, 0, 0.12);
-    g.add(rightShoulder);
-    addArm(rightShoulder, 0.12);
-
-    // A clean, human face: rounded skull, tapered jaw and a restrained expression.
-    const head = new THREE.Group();
-    part(roundGeo, skin, [0, 2.0, 0], [0.25, 0.2, 0.25], [0, 0, 0], 0.025);
-    head.position.set(0, 2.22, -0.02);
-    head.rotation.set(-0.05, 0.02, -0.02);
-    g.add(head);
-    part(headGeo, skin, [0, 0, 0], [0.7, 0.84, 0.68], [0, 0, 0], 0.035, head);
-    // Hair hugs the crown instead of stacking disconnected slabs over the face.
-    part(headGeo, 0x18141b, [0, 0.32, 0.04], [0.73, 0.27, 0.7], [0, 0, -0.08], 0.025, head);
-    part(headGeo, 0x18141b, [0.27, 0.17, 0.12], [0.22, 0.34, 0.55], [0, 0, 0.15], 0, head);
-    for (const eyeX of [-0.17, 0.17]) {
-      part(headGeo, 0xe7d4bb, [eyeX, 0.055, -0.314], [0.095, 0.055, 0.025], [0, 0, 0], 0, head);
-      part(headGeo, 0x201720, [eyeX, 0.055, -0.336], [0.035, 0.04, 0.018], [0, 0, 0], 0, head);
-      part(cube, 0x251922, [eyeX, 0.18, -0.315], [0.21, 0.035, 0.035], [0, 0, eyeX * 0.2], 0, head);
+    // Continuous tailored forms: waist, ribcage and sloped shoulders, not stacked boxes.
+    const torso = profile([[0.24, 0], [0.29, 0.12], [0.3, 0.4], [0.38, 0.67], [0.39, 0.74], [0.26, 0.83], [0.13, 0.86], [0, 0.86]]);
+    part(torso, shirt, [0, 1.02, 0], [1, 1, 0.63]);
+    const waistcoat = profile([[0.25, 0], [0.29, 0.14], [0.31, 0.46], [0.355, 0.68], [0.3, 0.72], [0, 0.72]]);
+    part(waistcoat, cloth, [0, 1.015, -0.008], [1.025, 1, 0.65]);
+    // Open shirt front and collar, with quiet buttons rather than bright jewellery.
+    part(boxGeo, shirt, [0, 1.69, -0.21], [0.13, 0.37, 0.018], g, 0);
+    for (const side of [-1, 1]) {
+      const collar = part(boxGeo, shirt, [side * 0.09, 1.845, -0.15], [0.13, 0.12, 0.028], g, 0);
+      collar.rotation.z = side * 0.34;
     }
-    part(headGeo, skinLight, [0, -0.095, -0.32], [0.105, 0.13, 0.095], [0, 0, 0], 0, head);
-    part(cube, 0x43282b, [0, -0.21, -0.30], [0.18, 0.02, 0.025], [0, 0, 0], 0, head);
-    part(headGeo, skinLight, [0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
-    part(headGeo, skinLight, [-0.38, -0.02, 0], [0.14, 0.22, 0.12], [0, 0, 0], 0, head);
+    for (const y of [1.28, 1.43, 1.58]) part(sphere, 0x74716a, [0, y, -0.224], [0.018, 0.018, 0.008], g, 0);
+    // Modest waist apron follows the body, its hem ending above the knees.
+    const apronGeo = profile([[0.31, 0], [0.285, 0.28], [0.25, 0.57]]);
+    part(apronGeo, 0x374b46, [0, 0.52, -0.015], [1, 1, 0.72]);
+    part(boxGeo, 0x293d38, [0, 0.84, -0.227], [0.25, 0.16, 0.016], g, 0);
+    const trouser = profile([[0.085, 0], [0.10, 0.32], [0.125, 0.7], [0.155, 0.93], [0, 0.94]]);
+    for (const side of [-1, 1]) {
+      part(trouser, 0x303237, [side * 0.165, 0.12, 0], [1, 1, 1]);
+      part(sphere, 0x17181b, [side * 0.165, 0.09, -0.075], [0.115, 0.09, 0.22]);
+    }
+    // Rounded shoulders, tapered forearms, relaxed hands and connected elbow joints.
+    const upperArm = new THREE.CylinderGeometry(0.115, 0.092, 0.43, 12);
+    const forearm = new THREE.CylinderGeometry(0.084, 0.06, 0.37, 12);
+    let idleArm: THREE.Group | undefined;
+    for (const side of [-1, 1]) {
+      const shoulder = new THREE.Group();
+      shoulder.position.set(side * 0.365, 1.76, 0);
+      shoulder.rotation.z = side * 0.095;
+      shoulder.rotation.x = -0.035;
+      g.add(shoulder);
+      part(sphere, shirt, [0, -0.04, 0], [0.127, 0.15, 0.125], shoulder);
+      part(upperArm, shirt, [0, -0.23, 0], [1, 1, 1], shoulder);
+      part(new THREE.CylinderGeometry(0.098, 0.098, 0.065, 12), shirt, [0, -0.42, 0], [1, 1, 1], shoulder);
+      const elbow = new THREE.Group();
+      elbow.position.y = -0.445;
+      elbow.rotation.x = 0.18;
+      shoulder.add(elbow);
+      part(sphere, skin, [0, 0, 0], [0.086, 0.086, 0.08], elbow, 0);
+      part(forearm, skin, [0, -0.18, 0], [1, 1, 1], elbow);
+      part(sphere, skin, [0, -0.425, -0.009], [0.07, 0.11, 0.043], elbow);
+      part(sphere, skin, [-side * 0.065, -0.398, -0.024], [0.025, 0.06, 0.027], elbow, 0);
+      if (side === -1) idleArm = shoulder;
+    }
+    // Sculpt one skull: temples, cheeks, jaw and chin change continuously.
+    const skull = new THREE.SphereGeometry(1, 20, 16);
+    const vertices = skull.getAttribute('position');
+    for (let i = 0; i < vertices.count; i++) {
+      const py = vertices.getY(i);
+      const lower = Math.max(0, -py);
+      vertices.setXYZ(i,
+        vertices.getX(i) * (1 - lower * 0.22), py,
+        vertices.getZ(i) * (1 - lower * 0.12));
+    }
+    skull.computeVertexNormals();
+    part(new THREE.CylinderGeometry(0.105, 0.12, 0.24, 12), skin, [0, 1.965, 0], [1, 1, 1]);
+    const head = new THREE.Group();
+    head.position.set(0, 2.215, -0.015);
+    head.rotation.x = -0.035;
+    g.add(head);
+    part(skull, skin, [0, 0, 0], [0.235, 0.315, 0.22], head);
+    // Close-cropped hair is a fitted cap, not a second floating head.
+    const hairCap = new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.47);
+    part(hairCap, hair, [0, 0.012, 0.015], [0.241, 0.32, 0.221], head);
+    for (const side of [-1, 1]) {
+      part(sphere, skin, [side * 0.235, -0.01, 0], [0.045, 0.075, 0.04], head, 0);
+      part(sphere, 0x977257, [side * 0.257, -0.01, -0.012], [0.012, 0.035, 0.019], head, 0);
+      // Small recessed eyes, lids and brows: no bulging whites or oversized features.
+      part(sphere, 0xc5b5a0, [side * 0.086, 0.045, -0.195], [0.048, 0.019, 0.018], head, 0);
+      part(sphere, 0x302923, [side * 0.086, 0.044, -0.211], [0.013, 0.014, 0.007], head, 0);
+      const brow = part(sphere, hair, [side * 0.088, 0.09, -0.195], [0.055, 0.013, 0.013], head, 0);
+      brow.rotation.z = side * -0.1;
+    }
+    part(sphere, skin, [0, 0.012, -0.217], [0.031, 0.078, 0.035], head, 0);
+    part(sphere, skin, [0, -0.048, -0.242], [0.043, 0.03, 0.037], head, 0);
+    part(sphere, 0x765044, [0, -0.125, -0.193], [0.07, 0.009, 0.012], head, 0);
+    part(sphere, skin, [0, -0.17, -0.182], [0.10, 0.055, 0.018], head, 0);
 
-    // A short neutral towel at the belt cannot be mistaken for an arm.
-    part(cube, shirt, [0.32, 0.9, -0.39], [0.16, 0.28, 0.04], [0, 0, 0], 0.02);
-
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.4, 16),
+      new THREE.MeshBasicMaterial({ color: 0x08040f, transparent: true, opacity: 0.32, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.012;
+    g.add(shadow);
     g.position.set(x, 0, z);
     g.rotation.y = rotY;
     g.scale.setScalar(scale);
     g.userData['phase'] = 0.7;
     g.userData['idleStyle'] = 'bartender';
     g.userData['idleHead'] = head;
-    g.userData['idleArm'] = leftShoulder;
+    g.userData['idleArm'] = idleArm;
     g.userData['idleHeadBaseY'] = head.rotation.y;
-    g.userData['idleArmBaseZ'] = leftShoulder.rotation.z;
+    g.userData['idleArmBaseZ'] = idleArm?.rotation.z ?? 0;
     bob.push(g);
     root.add(g);
     return g;
